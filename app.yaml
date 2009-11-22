@@ -29,8 +29,17 @@ handlers:
   static_files: static/css/\1
   upload: static/css/(.*)
 
+## Mail
+- url: /_ah/mail/.+ 
+  #script: handle_incoming_email.py
+  script: mail.py
+  login: admin
+
 ## Main WSGI
 - url: .*
   script: main.py
   #secure: always
   #login: admin
+
+inbound_services:
+- mail
