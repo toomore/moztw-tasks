@@ -10,3 +10,8 @@ class Volunteer(db.Model):
   userid = db.StringProperty()
   location = db.StringProperty()
   profile = db.StringProperty()
+
+class angeldata(db.Model):
+
+  mymaster = db.EmailProperty()
+  created_at = db.DateTimeProperty(auto_now_add = True)
