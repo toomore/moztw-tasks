@@ -22,22 +22,22 @@ class first(webapp.RequestHandler):
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
 class sendmails(webapp.RequestHandler):
-  #@login_required
-  def post(self):
-    to_addr = 'toomore0929@gmail.com'
-
-    message = mail.EmailMessage()
-    message.sender = users.get_current_user().email()
-    message.to = to_addr
+  @login_required
+  def get(self):
+    message = mail.EmailMessage(sender = users.get_current_user().email(),
+    subject="Your account has been approved")
+    message.to = "Toomore bot <toomore0929@gmail.com>"
     message.body = """
-I've invited you to Example.com!
+Dear Albert:
 
-To accept this invitation, click the following link,
-or copy and paste the URL into your browser's address
-bar:
+Your example.com account has been approved.  You can now visit
+http://www.example.com/ and sign in using your Google Account to
+access new features.
 
-%s
-    """ % users.get_current_user().email()
+Please let us know if you have any questions.
+
+The example.com Team
+    """
 
     message.send()
 
