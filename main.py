@@ -6,12 +6,10 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 from google.appengine.api import mail
 from google.appengine.ext.webapp.util import login_required
-
 from google.appengine.ext import db
-#import datamodel
-from datamodel import angeldata
-from datamodel import Volunteer
 
+from datamodel import angeldata
+from angelapp import angelmenu
 
 class first(webapp.RequestHandler):
   """ index page.
@@ -48,9 +46,10 @@ The example.com Team
 class angelgame(webapp.RequestHandler):
   @login_required
   def get(self):
-    if angeldata.get_by_key_name(users.get_current_user().email()):
-        tv = {'tip':'user:' + users.get_current_user().email()}
-        if angeldata.get_by_key_name(users.get_current_user().email()).mymaster is None:
+    user = users.get_current_user()
+    if angeldata.get_by_key_name(user.email()):
+        tip = 'user:' + user.email()
+        if angeldata.get_by_key_name(user.email()).mymaster is None:
           buildmaster = '''
 小主人的 Mail 尚未建立!
 <form action="/mail" method="POST">
@@ -59,20 +58,25 @@ class angelgame(webapp.RequestHandler):
 </form>
 <br>打錯就沒有小主人喔！
 '''
-          tv = {'tip':buildmaster}
+          tip = buildmaster
     else:
-        tv = {'tip':'檔案建立，請記得建立小主人資料！'}
-        angeldata(key_name = unicode(users.get_current_user().email())).put()
+        tip = '檔案建立，請記得建立小主人資料！<br><a href="/mail">是的是的！我會乖乖的建立</a>'
+        angeldata(key_name = unicode(user.email())).put()
+    tv = {'tip': tip,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
   def post(self):
+    user = users.get_current_user()
     try:    
       mm = self.request.get('mymastermail')
-      u = angeldata.get_by_key_name(users.get_current_user().email())
+      u = angeldata.get_by_key_name(user.email())
       u.mymaster = db.Email(mm)
       u.put()
     except:
       pass
     self.redirect('/mail')
+
 def main():
   """ Start up. """
   application = webapp.WSGIApplication([('/', first),('/mail',angelgame)],debug=True)
