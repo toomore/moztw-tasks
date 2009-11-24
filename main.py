@@ -19,7 +19,7 @@ class first(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     if user:
-      greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/")))
+      greeting = ("Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/")))
     else:
       greeting = ("<a href=\"%s\">Sign in or register</a>." % users.create_login_url("/"))
     tv = {'login':greeting}
@@ -66,7 +66,7 @@ class angelgame(webapp.RequestHandler):
         angeldata(key_name = unicode(user.email())).put()
     tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
   def post(self):
     user = users.get_current_user()
@@ -92,7 +92,7 @@ class mailtomaster(webapp.RequestHandler):
 """
     tv = {'tip': table,
           'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
   def post(self):
@@ -127,7 +127,7 @@ class mailtoangel(webapp.RequestHandler):
 """
     tv = {'tip': table,
           'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
   def post(self):
@@ -150,7 +150,7 @@ class mailtoangel(webapp.RequestHandler):
 """ % str(table.replace('\r\n','<br>').encode('utf-8'))
     tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
 def main():
