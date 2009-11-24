@@ -10,7 +10,7 @@ class angelmenu:
 
   def mastermenu(self):
     if self.master:
-      a = '<a href="/mailtomaster">關心小主人</a>'
+      a = '<a href="/mailtomaster">關心小主人↓</a>'
     else:
       a = '沒有建立小主人'
     return a
@@ -20,7 +20,7 @@ class angelmenu:
        
     if int(an.count()):
       #a = '<a href="/mailtoangel">呼叫小天使 %s </a>' % str(an.get().key().id_or_name())
-      a = '<a href="/mailtoangel">呼叫小天使</a>'
+      a = '<a href="/mailtoangel">呼叫小天使↑</a>'
     else:
       a = '哭哭！沒有小天使！'
     return a
@@ -32,7 +32,7 @@ class angelmenu:
   def sendmails(self,context,angel=None,master=None):
     footnote = """
 --
-這是一封由狐狸郵差代發的信件，回覆給郵差是沒有用的啦！
+這是一封由雷鳥郵差代發的信件，回覆給郵差是沒有用的啦！
 不過到這裡有用： http://moztw-tasks.appspot.com/mail
 """
     if angel:
