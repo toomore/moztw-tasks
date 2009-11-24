@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# app engine處理中文通用解法 http://blog.wahahajk.com/2008/08/app-engine.html
+
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -48,7 +50,7 @@ class angelgame(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     if angeldata.get_by_key_name(user.email()):
-        tip = 'user:' + user.email()
+        tip = '飛來飛去小天使<br>找來找去小主人'
         if angeldata.get_by_key_name(user.email()).mymaster is None:
           buildmaster = '''
 小主人的 Mail 尚未建立!
@@ -77,9 +79,87 @@ class angelgame(webapp.RequestHandler):
       pass
     self.redirect('/mail')
 
+class mailtomaster(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    table = """
+<form action="/mailtomaster" method="POST">
+傳送給小主人<br>
+<textarea name="note" cols="25" rows="7"></textarea><br>
+<input type="submit" value="傳送">
+</form>
+"""
+    tv = {'tip': table,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
+  def post(self):
+    user = users.get_current_user()
+    if user.email():
+      pass
+    else:
+      self.redirect('/mail')
+    table = self.request.get('note')
+    angelmenu(user.email()).sendmails(table,angel='1')
+    tip = """
+傳送完畢！<br>
+%s<br>
+<br>
+<a href="/mail">確定！</a> 或 <a href="/mailtomaster">再傳一封</a>
+""" % str(table.replace('\r\n','<br>').encode('utf-8'))
+    tv = {'tip': tip,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
+class mailtoangel(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    table = """
+<form action="/mailtoangel" method="POST">
+感謝我的小天使<br>
+<textarea name="note" cols="25" rows="7"></textarea><br>
+<input type="submit" value="謝謝小天使！">
+</form>
+"""
+    tv = {'tip': table,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
+  def post(self):
+    user = users.get_current_user()
+    if user.email():
+      pass
+    else:
+      self.redirect('/mail')
+    table = self.request.get('note')
+    ## send mail
+    #try:
+    angelmenu(user.email()).sendmails(table,master='1')
+    #except:
+    #  self.redirect('/mail')
+    tip = """
+傳送完畢！<br>
+%s<br>
+<br>
+<a href="/mail">確定！</a> 或 <a href="/mailtoangel">再次感謝！</a>
+""" % str(table.replace('\r\n','<br>').encode('utf-8'))
+    tv = {'tip': tip,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, %s! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
 def main():
   """ Start up. """
-  application = webapp.WSGIApplication([('/', first),('/mail',angelgame)],debug=True)
+  application = webapp.WSGIApplication([('/', first),
+                                        ('/mail',angelgame),
+                                        ('/mailtomaster',mailtomaster),
+                                        ('/mailtoangel',mailtoangel)
+                                        ],debug=True)
   run_wsgi_app(application)
 
 if __name__ == '__main__':
