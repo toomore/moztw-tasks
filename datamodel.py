@@ -15,3 +15,10 @@ class angeldata(db.Model):
 
   mymaster = db.EmailProperty()
   created_at = db.DateTimeProperty(auto_now_add = True)
+
+class angelmailbox(db.Model):
+
+  sender = db.EmailProperty()
+  to = db.EmailProperty()
+  context = db.TextProperty()
+  created_at = db.DateTimeProperty(auto_now_add = True)

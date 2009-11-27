@@ -11,7 +11,7 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
 from datamodel import angeldata
-from angelapp import angelmenu
+from angelapp import angelmenu,sendmails
 
 class first(webapp.RequestHandler):
   """ index page.
@@ -25,7 +25,7 @@ class first(webapp.RequestHandler):
     tv = {'login':greeting}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
-class sendmails(webapp.RequestHandler):
+class sendmailss(webapp.RequestHandler):
   @login_required
   def get(self):
     message = mail.EmailMessage(sender = users.get_current_user().email(),
@@ -102,7 +102,7 @@ class mailtomaster(webapp.RequestHandler):
     else:
       self.redirect('/mail')
     table = self.request.get('note')
-    angelmenu(user.email()).sendmails(table,angel='1')
+    sendmails(user.email()).sendmails(table,angel='1')
     tip = """
 傳送完畢！<br>
 %s<br>
@@ -139,7 +139,7 @@ class mailtoangel(webapp.RequestHandler):
     table = self.request.get('note')
     ## send mail
     #try:
-    angelmenu(user.email()).sendmails(table,master='1')
+    sendmails(user.email()).sendmails(table,master='1')
     #except:
     #  self.redirect('/mail')
     tip = """

@@ -38,7 +38,7 @@ handlers:
 ## Main WSGI
 - url: .*
   script: main.py
-  #secure: always
+  secure: always
   #login: admin
 
 inbound_services:
