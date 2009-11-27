@@ -11,7 +11,7 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
 from datamodel import angeldata
-from angelapp import angelmenu,sendmails
+from angelapp import angelmenu,sendmails,showmailbox
 
 class first(webapp.RequestHandler):
   """ index page.
@@ -153,12 +153,24 @@ class mailtoangel(webapp.RequestHandler):
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class mailbox(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    a = showmailbox(user.email())
+
+    tv = {'tip': '<table class="mailbox">' + a.show() + '</table>',
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
 def main():
   """ Start up. """
-  application = webapp.WSGIApplication([('/', first),
+  application = webapp.WSGIApplication([('/', angelgame),
                                         ('/mail',angelgame),
                                         ('/mailtomaster',mailtomaster),
-                                        ('/mailtoangel',mailtoangel)
+                                        ('/mailtoangel',mailtoangel),
+                                        ('/mailbox',mailbox)
                                         ],debug=True)
   run_wsgi_app(application)
 

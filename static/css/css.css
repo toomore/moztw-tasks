@@ -77,3 +77,19 @@ input{
         border-bottom:1px #aabbaa solid;}
 .foot {clear:both;}
 .cc {clear:both;}
+.mailbox{
+        font-size:10pt;
+        background:#eeeeff;
+        padding:14px;
+        margin:14px;}
+.mailbox td{
+        padding:14px;
+        margin:14px;}
+.frommaster {
+        background:#ccddcc;}
+.tomaster {
+        background:#ddccdd;}
+.fromangel {
+        background:#ccccee;}
+.toangel {
+        background:#ccccaa;}
