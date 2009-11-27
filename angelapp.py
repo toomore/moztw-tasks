@@ -41,31 +41,24 @@ class sendmails(angelmenu):
     angelmenu.__init__(self,user)
 
   def sendmails(self,context,angel=None,master=None):
-    footnote = """
---
-這是一封由雷鳥郵差代發的信件，回覆給郵差是沒有用的啦！
-不過到這裡有用： http://moztw-tasks.appspot.com/mail
-"""
+
     if angel:
       ## to master
-      message = mail.EmailMessage(
-        sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',
-        subject="您有一封小天使寄來的關心！")
-      message.to = self.master
-      message.body = "這是一封小天使寄給您的信，內容如下：\r\n\r\n%s %s" % (context.encode('utf-8'),footnote)
-      message.send()
-      intoangelmailbox = angelmailbox(sender = self.angel, to = self.master, context = context).put()
+      intoangelmailbox = angelmailbox(sender = self.angel,
+                                      to = self.master,
+                                      context = context,
+                                      sendtype = 2,
+                                      sended = bool(0)).put()
 
     elif master:
       ## to angel, need to search data.
       an = angeldata.gql("WHERE mymaster = '%s'" % self.angel)
-      message = mail.EmailMessage(
-        sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',
-        subject="您有一封小主人寄來的感謝！")
-      message.to = an.get().key().id_or_name()
-      message.body = "這是一封小主人寄給您的信，內容如下：\r\n\r\n%s %s" % (context.encode('utf-8'),footnote)
-      message.send()
-      intoangelmailbox = angelmailbox(sender = self.angel, to = an.get().key().id_or_name(), context = context).put()
+      
+      intoangelmailbox = angelmailbox(sender = self.angel,
+                                      to = an.get().key().id_or_name(),
+                                      context = context,
+                                      sendtype = 3,
+                                      sended = bool(0)).put()
 
 class showmailbox(angelmenu):
   def __init__(self,user = None):
@@ -105,7 +98,8 @@ class showmailbox(angelmenu):
         sender = 'From 小天使'
         cssclass = 'frommaster'
       else:
-        sender = '...'
+        sender = 'From God'
+        cssclass = 'fromgod'
 
       if len(c[i]['context']) > 140:
         c[i]['context'] = c[i]['context'][:140] + '<i>... (略，請見信箱)</i>'.decode('utf-8')
@@ -120,3 +114,9 @@ class showmailbox(angelmenu):
       )
     return dd
     #return self.angel,self.master,self.myangels
+
+class sendalluser:
+  def __init__(self):
+    self.allmail = []
+    for i in angeldata.all():
+      self.allmail.append(i.key().id_or_name())

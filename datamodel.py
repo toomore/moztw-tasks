@@ -17,7 +17,9 @@ class angeldata(db.Model):
   created_at = db.DateTimeProperty(auto_now_add = True)
 
 class angelmailbox(db.Model):
-
+  """ sendtype 1:god 2:to master 3:to angel"""
+  sendtype = db.IntegerProperty()
+  sended = db.BooleanProperty()
   sender = db.EmailProperty()
   to = db.EmailProperty()
   context = db.TextProperty()

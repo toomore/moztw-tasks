@@ -11,7 +11,7 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
 from datamodel import angeldata
-from angelapp import angelmenu,sendmails,showmailbox
+from angelapp import angelmenu,sendmails,showmailbox,sendalluser,angelmailbox
 
 class first(webapp.RequestHandler):
   """ index page.
@@ -164,12 +164,72 @@ class mailbox(webapp.RequestHandler):
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class mailtoall(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    table = """
+<form action="/mailtoall" method="POST">
+傳送給所有人<br>
+<textarea name="note" cols="25" rows="7"></textarea><br>
+<input type="submit" value="通知">
+</form>
+"""
+    
+    tv = {'tip': table,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
+  def post(self):
+    user = users.get_current_user()
+    if user.email():
+      pass
+    else:
+      self.redirect('/mail')
+    table = self.request.get('note')
+    #sendmails(user.email()).sendmails(table,angel='1')
+    #sendalluser().allmail
+    footnote = """
+--
+這是一封由雷鳥郵差代發的信件，回覆給郵差是沒有用的啦！
+我是 God！不要懷疑！多多關心小主人！多多感謝小天使！
+才能得永生！
+http://moztw-tasks.appspot.com/mail
+"""
+
+    message = mail.EmailMessage(
+      sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',
+      subject="您有一封 God 寄來的通知！")
+    message.bcc = sendalluser().allmail
+    message.body = "這是一封 God 寄給您的信，通知重要的內容：\r\n\r\n%s %s" % (table.encode('utf-8'),footnote)
+    #message.send()
+    for i in sendalluser().allmail:
+      intoangelmailbox = angelmailbox(sender = 'God',
+                                      to = i,
+                                      context = table,
+                                      sendtype = 1,
+                                      sended = bool(0)).put()
+
+    tip = """
+通知完畢！<br>
+%s<br>
+<br>
+<a href="/mail">確定！</a> 或 <a href="/mailtoall">再通知一封</a>
+""" % str(table.replace('\r\n','<br>').encode('utf-8'))
+    tv = {'tip': tip,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
+
 def main():
   """ Start up. """
   application = webapp.WSGIApplication([('/', angelgame),
                                         ('/mail',angelgame),
                                         ('/mailtomaster',mailtomaster),
                                         ('/mailtoangel',mailtoangel),
+                                        ('/mailtoall',mailtoall),
                                         ('/mailbox',mailbox)
                                         ],debug=True)
   run_wsgi_app(application)

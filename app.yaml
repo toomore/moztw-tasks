@@ -36,10 +36,16 @@ handlers:
   login: admin
 
 ## Mailbox
-- url: /mailbox
+- url: /mailtoall
   script: main.py
   secure: always
-  #login: admin
+  login: admin
+
+## Cron
+- url: /cron
+  script: cronsendmail.py
+  #secure: always
+  login: admin
 
 ## Main WSGI
 - url: .*
