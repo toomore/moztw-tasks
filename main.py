@@ -10,7 +10,7 @@ from google.appengine.api import mail
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
-from datamodel import angeldata
+from datamodel import angeldata,angelmasterlist
 from angelapp import angelmenu,sendmails,showmailbox,sendalluser,angelmailbox
 
 class first(webapp.RequestHandler):
@@ -62,13 +62,20 @@ class angelgame(webapp.RequestHandler):
 '''
         tip = buildmaster
     else:
-      #tip = '檔案建立，請記得建立小主人資料！<br><a href="/mail">是的是的！我會乖乖的建立</a>'
+      tip = '檔案建立，請記得關心小主人喔！<br><a href="/mail">是的是的！我會乖乖的關心小主人</a>'
       ## Need to get the master info.
-      
-      angeldata(key_name = unicode(user.email())).put()
-    tv = {'tip': tip,
-          'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+      try:
+        getusermaster = angelmasterlist.get_by_key_name(user.email())
+        angeldata(key_name = unicode(user.email()),mymaster = getusermaster.master).put()
+      except:
+        tip = '你沒有玩這遊戲！'
+    try:
+      tv = {'tip': tip,
+            'menu': angelmenu(user.email()).listmenu(),
+            'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    except:
+      tv = {'tip': tip,
+            'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
   def post(self):
     user = users.get_current_user()
