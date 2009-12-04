@@ -3,6 +3,8 @@
 from datamodel import angeldata,angelmailbox,angelmasterlist
 from google.appengine.api import mail
 import time,datetime
+from random import randrange,choice
+
 
 class angelmenu:
   def __init__(self,angel):
@@ -41,7 +43,7 @@ class angelmenu:
     return a
 
   def listmenu(self):
-    a = self.showmailboxmenu() + " | " + self.mastermenu() + " | " + self.myangel() + " | " + self.showsetting()
+    a = self.showmailboxmenu() + " " + self.mastermenu() + " " + self.myangel() + " " + self.showsetting()
     return a
 
 class sendmails(angelmenu):
@@ -129,3 +131,16 @@ class sendalluser:
     #for i in angeldata.all():
     for i in angelmasterlist.all():
       self.allmail.append(i.key().id_or_name())
+
+class ifeelgood:
+  def good(self):
+    color = choice(['紅','橙','黃','綠','藍','靛','紫','黑','白'])
+    nom = randrange(0,101)
+    gps = choice(['東','南','西','北',])
+    food = choice(['張君雅小妹妹','科學麵','五香乖乖','魷魚絲','水煮蛋','土豆麵筋','薄皮嫩雞','大麥克','滿天星',
+                  '五更腸旺','豪記臭豆腐','文山清茶半糖少冰','早餐店的鮮奶茶','白馬馬力夯','維大力','保力達','蠻牛','寶礦立水得',
+                  'Open 小將','全家就是你家','香雞排','阿鈣 (我有健康的膝蓋...)','麻辣鍋','饅頭夾蛋','無糖豆漿','八匙綠豆八寶冰','珍珠奶茶不加珍珠',
+                  '蔥油餅','麻油雞','泰式酸辣蛤蜊義大利麵','酸辣湯','正忠排骨飯','池上便當','紅豆沙餡','四神湯','巧克力吐司加蛋加起士',
+                  '草莓吐司加蛋加起士','花生吐司加蛋加起士','鍋燒烏龍麵','酸辣湯','蛋黃麵','青椒炒肉絲','羊肉燴飯','涼麵','泡菜水餃'
+                  ])
+    return color,nom,gps,food
