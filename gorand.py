@@ -21,7 +21,7 @@ def cc(a):
       while b == i:
         b = choice(t)
     if (b,i) in c:
-        b = choice(t)      
+        b = choice(t)
     t.remove(b)
     c.append((i,b))
 

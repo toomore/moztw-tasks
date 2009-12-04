@@ -68,7 +68,7 @@ class angelgame(webapp.RequestHandler):
         getusermaster = angelmasterlist.get_by_key_name(user.email())
         angeldata(key_name = unicode(user.email()),mymaster = getusermaster.master).put()
       except:
-        tip = '你沒有玩這遊戲！'
+        tip = '<img src="http://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Lucas_Cranach_d._Ä._035.jpg/300px-Lucas_Cranach_d._Ä._035.jpg"><br><br>You are out of the <a href="http://en.wikipedia.org/wiki/Garden_of_Eden">Eden</a>...'
     try:
       tv = {'tip': tip,
             'menu': angelmenu(user.email()).listmenu(),
