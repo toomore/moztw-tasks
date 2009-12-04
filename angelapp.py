@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #coding=utf-8
-from datamodel import angeldata,angelmailbox
+from datamodel import angeldata,angelmailbox,angelmasterlist
 from google.appengine.api import mail
 import time,datetime
 
@@ -36,8 +36,12 @@ class angelmenu:
     a = '<a href="/mailbox">Mailbox</a>'
     return a
 
+  def showsetting(self):
+    a = '<a href="/mailsetting">設定暱稱</a>'
+    return a
+
   def listmenu(self):
-    a = self.showmailboxmenu() + " | " + self.mastermenu() + " | " + self.myangel()
+    a = self.showmailboxmenu() + " | " + self.mastermenu() + " | " + self.myangel() + " | " + self.showsetting()
     return a
 
 class sendmails(angelmenu):
@@ -122,5 +126,6 @@ class showmailbox(angelmenu):
 class sendalluser:
   def __init__(self):
     self.allmail = []
-    for i in angeldata.all():
+    #for i in angeldata.all():
+    for i in angelmasterlist.all():
       self.allmail.append(i.key().id_or_name())

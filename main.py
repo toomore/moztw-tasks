@@ -61,6 +61,15 @@ class angelgame(webapp.RequestHandler):
 <br>打錯就沒有小主人喔！
 '''
         tip = buildmaster
+      if angeldata.get_by_key_name(user.email()).nickname is None:
+        buildmaster = '''
+設定暱稱
+<form action="/mail" method="POST">
+<input name="mynickname">
+<input type="submit" value="設定">
+</form><br>這會顯示在所有參與人員名單上，但不會有任何的提示關於你的小主人。
+'''
+        tip = buildmaster
     else:
       tip = '檔案建立，請記得關心小主人喔！<br><a href="/mail">是的是的！我會乖乖的關心小主人</a>'
       ## Need to get the master info.
@@ -77,6 +86,7 @@ class angelgame(webapp.RequestHandler):
       tv = {'tip': tip,
             'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
   def post(self):
     user = users.get_current_user()
     try:    
@@ -85,7 +95,10 @@ class angelgame(webapp.RequestHandler):
       u.mymaster = db.Email(mm)
       u.put()
     except:
-      pass
+      mm = self.request.get('mynickname')
+      u = angeldata.get_by_key_name(user.email())
+      u.nickname = str(mm)
+      u.put()
     self.redirect('/mail')
 
 class mailtomaster(webapp.RequestHandler):
@@ -173,6 +186,23 @@ class mailbox(webapp.RequestHandler):
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class mailsetting(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    buildmaster = '''
+設定暱稱
+<form action="/mail" method="POST">
+<input name="mynickname" value="%s">
+<input type="submit" value="設定">
+</form><br>這會顯示在所有參與人員名單上，但不會有任何的提示關於你的小主人。
+''' % angeldata.get_by_key_name(user.email()).nickname.encode('utf-8')
+    tip = buildmaster
+    tv = {'tip': tip,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
 class mailtoall(webapp.RequestHandler):
   @login_required
   def get(self):
@@ -239,7 +269,8 @@ def main():
                                         ('/mailtomaster',mailtomaster),
                                         ('/mailtoangel',mailtoangel),
                                         ('/mailtoall',mailtoall),
-                                        ('/mailbox',mailbox)
+                                        ('/mailbox',mailbox),
+                                        ('/mailsetting',mailsetting)
                                         ],debug=True)
   run_wsgi_app(application)
 

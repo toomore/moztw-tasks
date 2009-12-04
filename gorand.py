@@ -35,6 +35,7 @@ def gorand(maillist,times):
     return a
 
 maillist = ['toomore','tim','bob','smallfish','irvin','QQ']
+
 qq = gorand(maillist,20)
 for i,q in qq:
     angelmasterlist(key_name = i, master = q).put()

@@ -12,8 +12,9 @@ class Volunteer(db.Model):
   profile = db.StringProperty()
 
 class angeldata(db.Model):
-
+  """ User data. """
   mymaster = db.EmailProperty()
+  nickname = db.StringProperty()
   created_at = db.DateTimeProperty(auto_now_add = True)
 
 class angelmailbox(db.Model):
