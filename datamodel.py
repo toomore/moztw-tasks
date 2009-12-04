@@ -24,3 +24,14 @@ class angelmailbox(db.Model):
   to = db.EmailProperty()
   context = db.TextProperty()
   created_at = db.DateTimeProperty(auto_now_add = True)
+
+class angelandmaster(db.Model):
+  user = db.EmailProperty()
+  master = db.EmailProperty()
+
+class refname(db.Model):
+  user = db.EmailProperty()
+
+class reftest(db.Model):
+  refone = db.ReferenceProperty(angeldata,collection_name = 'eee')
+  created_at = db.DateTimeProperty(auto_now_add = True)

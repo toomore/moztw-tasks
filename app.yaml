@@ -41,6 +41,12 @@ handlers:
   secure: always
   login: admin
 
+## testref
+- url: /testref
+  script: testref.py
+  secure: always
+  login: admin
+
 ## Cron
 - url: /cron
   script: cronsendmail.py

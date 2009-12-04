@@ -50,9 +50,9 @@ class angelgame(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     if angeldata.get_by_key_name(user.email()):
-        tip = '飛來飛去小天使<br>找來找去小主人'
-        if angeldata.get_by_key_name(user.email()).mymaster is None:
-          buildmaster = '''
+      tip = '飛來飛去小天使<br>找來找去小主人'
+      if angeldata.get_by_key_name(user.email()).mymaster is None:
+        buildmaster = '''
 小主人的 Mail 尚未建立!
 <form action="/mail" method="POST">
 <input name="mymastermail">
@@ -60,14 +60,20 @@ class angelgame(webapp.RequestHandler):
 </form>
 <br>打錯就沒有小主人喔！
 '''
-          tip = buildmaster
+        tip = buildmaster
     else:
-        tip = '檔案建立，請記得建立小主人資料！<br><a href="/mail">是的是的！我會乖乖的建立</a>'
-        angeldata(key_name = unicode(user.email())).put()
-    tv = {'tip': tip,
-          'menu': angelmenu(user.email()).listmenu(),
-          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+      ''' Build User info. '''
+      tip = '檔案建立，請記得建立小主人資料！<br><a href="/mail">是的是的！我會乖乖的建立</a>'
+      angeldata(key_name = unicode(user.email())).put()
+      refname(key_name = unicode(user.email())).put()
+    try:
+      tv = {'tip': tip,
+            'menu': angelmenu(user.email()).listmenu(),
+            'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    except:
+      tv = []
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
+
   def post(self):
     user = users.get_current_user()
     try:    

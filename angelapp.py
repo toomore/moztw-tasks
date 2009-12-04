@@ -32,8 +32,12 @@ class angelmenu:
       a = '哭哭！沒有小天使！'
     return a
 
+  def showmenumailbox(self):
+    a = '<a href="/mailbox">Mailbox</a>'
+    return a
+
   def listmenu(self):
-    a = self.mastermenu() + " | " + self.myangel()
+    a = " | " + self.showmenumailbox() + " | " + self.mastermenu() + " | " + self.myangel()
     return a
 
 class sendmails(angelmenu):
