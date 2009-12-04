@@ -37,7 +37,7 @@ class angelmenu:
     return a
 
   def listmenu(self):
-    a = self.showmailboxmenu + " | " + self.mastermenu() + " | " + self.myangel()
+    a = self.showmailboxmenu() + " | " + self.mastermenu() + " | " + self.myangel()
     return a
 
 class sendmails(angelmenu):
