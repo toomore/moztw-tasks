@@ -288,7 +288,9 @@ class chart(webapp.RequestHandler):
     fromgod = a.all().filter('sendtype =',1).count()
     fromangel = a.all().filter('sendtype =',2).count()
     frommaster = a.all().filter('sendtype =',3).count()
-    tip = "G: %s, A: %s, M: %s" % (fromgod,fromangel,frommaster)
+    loginnum = angeldata.all().count()
+    allpeople = angelmasterlist.all().count()
+    tip = "G: %s, A: %s, M: %s<br>Login People: %s/%s" % (fromgod,fromangel,frommaster,loginnum,allpeople)
     img = 'http://chart.apis.google.com/chart?chs=400x100&cht=bhs&chd=t:%s,%s,%s&chxt=x,y&chxl=1:|M|A|G' % (fromgod,fromangel,frommaster)
     tv = {'tip': tip + '<br><img src="%s">' % img,
           'menu': angelmenu(user.email()).listmenu(),
