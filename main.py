@@ -280,6 +280,20 @@ http://moztw-tasks.appspot.com/mail
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class chart(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    a = angelmailbox
+    fromgod = a.all().filter('sendtype =',1).count()
+    fromangel = a.all().filter('sendtype =',2).count()
+    frommaster = a.all().filter('sendtype =',3).count()
+    tip = "G: %s, A: %s, M: %s" % (fromgod,fromangel,frommaster)
+    img = 'http://chart.apis.google.com/chart?chs=400x100&cht=bhs&chd=t:%s,%s,%s&chxt=x,y&chxl=1:|M|A|G' % (fromgod,fromangel,frommaster)
+    tv = {'tip': tip + '<br><img src="%s">' % img,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
 def main():
   """ Start up. """
@@ -289,7 +303,8 @@ def main():
                                         ('/mailtoangel',mailtoangel),
                                         ('/mailtoall',mailtoall),
                                         ('/mailbox',mailbox),
-                                        ('/mailsetting',mailsetting)
+                                        ('/mailsetting',mailsetting),
+                                        ('/chart',chart)
                                         ],debug=True)
   run_wsgi_app(application)
 
