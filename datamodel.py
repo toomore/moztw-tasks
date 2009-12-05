@@ -11,10 +11,15 @@ class Volunteer(db.Model):
   location = db.StringProperty()
   profile = db.StringProperty()
 
+class angelmasterlist(db.Model):
+  #user = db.EmailProperty()
+  master = db.EmailProperty()
+
 class angeldata(db.Model):
   """ User data. """
   mymaster = db.EmailProperty()
   nickname = db.StringProperty()
+  refs = db.ReferenceProperty(angelmasterlist)
   created_at = db.DateTimeProperty(auto_now_add = True)
 
 class angelmailbox(db.Model):
@@ -25,7 +30,3 @@ class angelmailbox(db.Model):
   to = db.EmailProperty()
   context = db.TextProperty()
   created_at = db.DateTimeProperty(auto_now_add = True)
-
-class angelmasterlist(db.Model):
-  #user = db.EmailProperty()
-  master = db.EmailProperty()

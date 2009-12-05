@@ -75,7 +75,7 @@ class angelgame(webapp.RequestHandler):
       ## Need to get the master info.
       try:
         getusermaster = angelmasterlist.get_by_key_name(user.email())
-        angeldata(key_name = unicode(user.email()),mymaster = getusermaster.master).put()
+        angeldata(key_name = unicode(user.email()), mymaster = getusermaster.master, refs = getusermaster.key()).put()
       except:
         tip = '<img src="http://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Lucas_Cranach_d._Ä._035.jpg/300px-Lucas_Cranach_d._Ä._035.jpg"><br><br>You are out of the <a href="http://en.wikipedia.org/wiki/Garden_of_Eden">Eden</a>...'
     try:
@@ -280,6 +280,15 @@ http://moztw-tasks.appspot.com/mail
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class reftest(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    d = angeldata.get_by_key_name(user.email())
+    tv = {'tip': [(i,getattr(d.refs,i)) for i in dir(d.refs)],
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
 def main():
   """ Start up. """
@@ -289,7 +298,8 @@ def main():
                                         ('/mailtoangel',mailtoangel),
                                         ('/mailtoall',mailtoall),
                                         ('/mailbox',mailbox),
-                                        ('/mailsetting',mailsetting)
+                                        ('/mailsetting',mailsetting),
+                                        ('/reftest',reftest)
                                         ],debug=True)
   run_wsgi_app(application)
 
