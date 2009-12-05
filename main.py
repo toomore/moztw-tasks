@@ -105,13 +105,25 @@ class mailtomaster(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
+    mymaster = ((angelmasterlist.get_by_key_name(user.email()).master).encode('utf-8'))
+    try:
+      mymasternickname = angeldata.get_by_key_name(mymaster).nickname
+      if mymasternickname is None:
+        pass
+      else:
+        mymasternickname = mymasternickname.encode('utf-8')
+    except:
+      mymasternickname = '<i>沒有設定暱稱</i>'
+
     table = """
 <form action="/mailtomaster" method="POST">
 傳送給小主人<br>
 <textarea name="note" cols="25" rows="7"></textarea><br>
 <input type="submit" value="傳送">
 </form>
-"""
+我的小主人是 <font color="#99aa99"><b>%s</b> <i>(%s)</i></font>
+""" % (mymasternickname,mymaster.split('@')[0])
+
     tv = {'tip': table,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
@@ -190,13 +202,20 @@ class mailsetting(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
+    nickname = angeldata.get_by_key_name(user.email()).nickname
+    if nickname is None:
+      nickname = ''
+    else:
+      nicaname = nickname.encode('utf-8')
     buildmaster = '''
 設定暱稱
 <form action="/mail" method="POST">
 <input name="mynickname" value="%s">
 <input type="submit" value="設定">
 </form><br>這會顯示在所有參與人員名單上，但不會有任何的提示關於你的小主人。
-''' % (angeldata.get_by_key_name(user.email()).nickname).encode('utf-8')
+''' % nickname.encode('utf-8')
+#''' % (angeldata.get_by_key_name(user.email()).nickname).encode('utf-8')
+
     tip = buildmaster
     tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
