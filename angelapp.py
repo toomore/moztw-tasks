@@ -106,7 +106,7 @@ class showmailbox(angelmenu):
         cssclass = 'toangel'
       elif c[i]['sender'] == self.myangels and c[i]['to'] == self.angel:
         sender = 'From 小天使'
-        cssclass = 'frommaster'
+        cssclass = 'fromangel'
       else:
         sender = 'From God'
         cssclass = 'fromgod'
