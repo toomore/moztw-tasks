@@ -1,0 +1,12 @@
+06/12/2009 02:27:09
+===================
+搞懂 ReferenceProperty
+http://code.google.com/appengine/docs/python/datastore/typesandpropertyclasses.html#ReferenceProperty
+
+[code]
+from google.appengine.api import users
+from datamodel import angelmasterlist
+a = angelmasterlist.get_by_key_name('toomore0929@gmail.com')
+for i in a.emails:
+  print i.key()
+[/code]
