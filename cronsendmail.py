@@ -31,6 +31,7 @@ for i in angelmailbox.gql('where sended = False limit 8'):
 這是一封由雷鳥郵差代發的信件，回覆給郵差是沒有用的啦！
 我是 God！不要懷疑！多多關心小主人！多多感謝小天使！
 才能得永生！
+http://moztw-tasks.appspot.com/mail
 """
     message = mail.EmailMessage(
       sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',

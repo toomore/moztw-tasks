@@ -97,7 +97,7 @@ class angelgame(webapp.RequestHandler):
     except:
       mm = self.request.get('mynickname')
       u = angeldata.get_by_key_name(user.email())
-      u.nickname = str(mm)
+      u.nickname = mm
       u.put()
     self.redirect('/mail')
 
@@ -196,7 +196,7 @@ class mailsetting(webapp.RequestHandler):
 <input name="mynickname" value="%s">
 <input type="submit" value="設定">
 </form><br>這會顯示在所有參與人員名單上，但不會有任何的提示關於你的小主人。
-''' % angeldata.get_by_key_name(user.email()).nickname.encode('utf-8')
+''' % (angeldata.get_by_key_name(user.email()).nickname).encode('utf-8')
     tip = buildmaster
     tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
