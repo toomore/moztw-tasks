@@ -6,10 +6,6 @@ from angelapp import ifeelgood
 
 footnote = """
 
-
-★ 要順手回一封嗎？
-★ http://moztw-tasks.appspot.com/mail
-
 ♥ 幸運顏色： %s
 ♥ 幸運號碼： %s
 ♥ 幸運方位： %s
@@ -41,21 +37,33 @@ http://moztw-tasks.appspot.com/mail
     message.send()
 
   if i.sendtype == 2:
-    ## to master    
+    ## to master
+    toreply = """
+
+★ 要順手回一封給小天使嗎？
+★ http://moztw-tasks.appspot.com/mailtoangel
+
+"""
     message = mail.EmailMessage(
       sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',
       subject="您有一封小天使飛來的關心！")
     message.bcc = i.to
-    message.body = "這是一封小天使寄給您的信，內容如下：\r\n\r\n%s %s" % (i.context.encode('utf-8'),footnote)
+    message.body = "這是一封小天使寄給您的信，內容如下：\r\n\r\n%s %s%s" % (i.context.encode('utf-8'),toreply,footnote)
     message.send()
 
 
   if i.sendtype == 3:
     ## to angel
+    toreply = """
+
+★ 要順手回一封給小主人嗎？
+★ http://moztw-tasks.appspot.com/mailtomaster
+
+"""
     message = mail.EmailMessage(
       sender = 'MozTW 雷鳥郵差 <noreply@moztw-tasks.appspotmail.com>',
       subject="您有一封小主人寄來的感謝！")
     message.bcc = i.to
-    message.body = "這是一封小主人寄給您的信，內容如下：\r\n\r\n%s %s" % (i.context.encode('utf-8'),footnote)
+    message.body = "這是一封小主人寄給您的信，內容如下：\r\n\r\n%s %s%s" % (i.context.encode('utf-8'),toreply,footnote)
     message.send()
 
