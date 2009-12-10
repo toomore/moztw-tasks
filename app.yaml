@@ -41,6 +41,12 @@ handlers:
   secure: always
   login: admin
 
+## Chart
+- url: /chart
+  script: main.py
+  secure: always
+  login: admin
+
 ## perding
 - url: /gorand
   script: gorand.py
