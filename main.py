@@ -10,8 +10,8 @@ from google.appengine.api import mail
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
-from datamodel import angeldata,angelmasterlist
-from angelapp import angelmenu,sendmails,showmailbox,sendalluser,angelmailbox
+from datamodel import angeldata,angelmasterlist,guessangel
+from angelapp import angelmenu,sendmails,showmailbox,sendalluser,angelmailbox,guesstheangel
 
 class first(webapp.RequestHandler):
   """ index page.
@@ -288,7 +288,7 @@ class reftest(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     d = angeldata.get_by_key_name(user.email())
-    tv = {'tip': [(str((i,str(getattr(d.refs.angeldata_set,i))))+'<br>') for i in dir(d.refs.angeldata_set)],
+    tv = {'tip': [(str((i,str(getattr(d.refs.angeldata_set,i))))+'<br>') for i in dir(d.refs.angeldata_set)]}
 
 class chart(webapp.RequestHandler):
   @login_required
@@ -307,6 +307,17 @@ class chart(webapp.RequestHandler):
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+class angelguess(webapp.RequestHandler):
+  @login_required
+  def get(self):
+    user = users.get_current_user()
+    print '123'
+    guesstheangel().userkeys(user.email())
+    k = angeldata.get_by_key_name(user.email())
+    guessangel(ggangel = 'q@gmail.com', ref = k.key()).put()
+    print dir(guesstheangel)
+
+
 def main():
   """ Start up. """
   application = webapp.WSGIApplication([('/', angelgame),
@@ -316,7 +327,8 @@ def main():
                                         ('/mailtoall',mailtoall),
                                         ('/mailbox',mailbox),
                                         ('/mailsetting',mailsetting),
-                                        ('/reftest',reftest)
+                                        ('/angelguess',angelguess),
+                                        ('/reftest',reftest),
                                         ('/chart',chart)
                                         ],debug=True)
   run_wsgi_app(application)

@@ -12,7 +12,6 @@ class Volunteer(db.Model):
   profile = db.StringProperty()
 
 class angelmasterlist(db.Model):
-  #user = db.EmailProperty()
   master = db.EmailProperty()
 
 class angeldata(db.Model):
@@ -29,4 +28,9 @@ class angelmailbox(db.Model):
   sender = db.EmailProperty()
   to = db.EmailProperty()
   context = db.TextProperty()
+  created_at = db.DateTimeProperty(auto_now_add = True)
+
+class guessangel(db.Model):
+  ggangel = db.EmailProperty()
+  ref = db.ReferenceProperty(angeldata,collection_name = 'ggg') #ref angeldata.user.key
   created_at = db.DateTimeProperty(auto_now_add = True)

@@ -5,7 +5,7 @@ from google.appengine.api import mail
 import time,datetime
 from random import randrange,choice
 
-
+############### Menu
 class angelmenu:
   def __init__(self,angel):
     self.angel = angel
@@ -50,6 +50,7 @@ class angelmenu:
     a = self.showmailboxmenu() + " " + self.mastermenu() + " " + self.myangel() + " " + self.showsetting() + " " + self.guessangel()
     return a
 
+############### Send mails
 class sendmails(angelmenu):
   def __init__(self,user = None):
     angelmenu.__init__(self,user)
@@ -74,6 +75,7 @@ class sendmails(angelmenu):
                                       sendtype = 3,
                                       sended = bool(0)).put()
 
+############### Show mail box
 class showmailbox(angelmenu):
   def __init__(self,user = None):
     angelmenu.__init__(self,user)
@@ -148,3 +150,17 @@ class ifeelgood:
                   '草莓吐司加蛋加起士','花生吐司加蛋加起士','鍋燒烏龍麵','酸辣湯','蛋黃麵','青椒炒肉絲','羊肉燴飯','涼麵','泡菜水餃'
                   ])
     return color,nom,gps,food
+
+class guesstheangel:
+  def __init__(self):
+    self.userkey = ''
+    self.ggangel = ''
+
+  def __finddata(self,user):
+    u = angeldata.get_by_key_name(user)
+    print u.key()
+    print [(i.ggangel,i.created_at) for i in u.ggg]
+    print dir(u)
+
+  def userkeys(self,user):
+    self.__finddata(user)
