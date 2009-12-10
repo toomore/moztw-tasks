@@ -42,8 +42,12 @@ class angelmenu:
     a = '<a href="/mailsetting">設定暱稱</a>'
     return a
 
+  def guessangel(self):
+    a = '<a href="/angelguess">猜一猜</a>'
+    return a
+
   def listmenu(self):
-    a = self.showmailboxmenu() + " " + self.mastermenu() + " " + self.myangel() + " " + self.showsetting()
+    a = self.showmailboxmenu() + " " + self.mastermenu() + " " + self.myangel() + " " + self.showsetting() + " " + self.guessangel()
     return a
 
 class sendmails(angelmenu):
