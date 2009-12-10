@@ -59,6 +59,12 @@ handlers:
   #secure: always
   login: admin
 
+## vol
+- url: /vol/?(.*)
+  script: vol.py
+  #secure: always
+  login: admin
+
 ## Main WSGI
 - url: .*
   script: main.py
