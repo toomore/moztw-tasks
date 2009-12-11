@@ -21,7 +21,6 @@ class angeldata(db.Model):
   """ User data. """
   mymaster = db.EmailProperty()
   nickname = db.StringProperty()
-  #refs = db.ReferenceProperty(angelmasterlist,collection_name = 'emails')
   created_at = db.DateTimeProperty(auto_now_add = True)
 
 class angelmailbox(db.Model):
