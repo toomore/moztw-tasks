@@ -311,12 +311,38 @@ class angelguess(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    print '123'
-    guesstheangel().userkeys(user.email())
-    k = angeldata.get_by_key_name(user.email())
-    guessangel(ggangel = 'q@gmail.com', ref = k.key()).put()
-    print dir(guesstheangel)
+    #print '123'
+    #guesstheangel().userkeys(user.email())
+    #k = angeldata.get_by_key_name(user.email())
+    #guessangel(ggangel = 'q@gmail.com', ref = k.key()).put()
+    #print dir(guesstheangel)
+    u = angeldata.all()
+    tip = []
+    r = ''
+    for i in u:
+      #print i.key().id_or_name()
+      #i.nickname,i.key()
+      if i.key().id_or_name() == user.email():
+        pass
+      else:
+        r = r + '<tr><td><input id="%s" name="gangel" type="radio" value="%s"></td><td><label for="%s">%s (%s)</label></td></tr>' % ((i.key().id_or_name()).split('@')[0],i.key(),(i.key().id_or_name()).split('@')[0],i.nickname,(i.key().id_or_name()).split('@')[0])
+        tr = '<div><form method="POST"><table class="ggangel">%s</table><input type="submit" value="Go"></form></div>' % r
+        tr = tr + str(guesstheangel(user.email()).guess)
+    tv = {'tip': tr,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
+  def post(self):
+    user = users.get_current_user()
+    u = angeldata.get(self.request.get('gangel'))
+
+    guesstheangel(user.email()).indata(u.key().id_or_name())
+
+    tv = {'tip': guesstheangel(user.email()).guess,
+          'menu': angelmenu(user.email()).listmenu(),
+          'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
+    self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
 
 def main():
   """ Start up. """

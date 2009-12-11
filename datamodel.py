@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """ Data property. """
 
 from google.appengine.ext import db
@@ -32,5 +35,5 @@ class angelmailbox(db.Model):
 
 class guessangel(db.Model):
   ggangel = db.EmailProperty()
-  ref = db.ReferenceProperty(angeldata,collection_name = 'ggg') #ref angeldata.user.key
+  ref = db.ReferenceProperty(angeldata,collection_name = 'ggg') #ref angeldata.user(angel).key
   created_at = db.DateTimeProperty(auto_now_add = True)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #coding=utf-8
-from datamodel import angeldata,angelmailbox,angelmasterlist
+from datamodel import angeldata,angelmailbox,angelmasterlist,guessangel
 from google.appengine.api import mail
 import time,datetime
 from random import randrange,choice
@@ -151,16 +151,19 @@ class ifeelgood:
                   ])
     return color,nom,gps,food
 
-class guesstheangel:
-  def __init__(self):
-    self.userkey = ''
-    self.ggangel = ''
+class guesstheangel(angelmenu):
+  def __init__(self,user = None):
+    angelmenu.__init__(self,user)
+    self.user = user
 
-  def __finddata(self,user):
-    u = angeldata.get_by_key_name(user)
-    print u.key()
-    print [(i.ggangel,i.created_at) for i in u.ggg]
-    print dir(u)
+  def indata(self,ggangel):
+    myangelkey = angeldata.get_by_key_name(self.myangels)
+    guessangel(ggangel = ggangel, ref = myangelkey.key()).put()
 
-  def userkeys(self,user):
-    self.__finddata(user)
+  @property
+  def guess(self):
+    u = angeldata.get_by_key_name(self.user)
+    a = []
+    for i in u.ggg.order('-created_at').fetch(1):
+      a.append((i.ggangel, i.created_at))
+    return a
