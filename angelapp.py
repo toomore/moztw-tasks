@@ -157,13 +157,47 @@ class guesstheangel(angelmenu):
     self.user = user
 
   def indata(self,ggangel):
-    myangelkey = angeldata.get_by_key_name(self.myangels)
-    guessangel(ggangel = ggangel, ref = myangelkey.key()).put()
+    ''' Into data '''
+    ## Get the key of user's angel.
+    try:
+      myangelkey = angeldata.get_by_key_name(self.myangels)
+      guessangel(ggangel = ggangel, ref = myangelkey.key()).put()
+    except:
+      pass
+
+  @property
+  def guessworking(self):
+    a = None
+    u = angeldata.get_by_key_name(self.user)
+    for i in u.ggg.order('-created_at').fetch(1):
+      a = i.ggangel
+
+    if a is not None:
+      b = angeldata.get_by_key_name(a)
+      #getuserinfo = b.nickname + ' (%s)' % (b.key().id_or_name()).split('@')[0]
+      getuserinfo = b.nickname
+    else:
+      getuserinfo = None
+
+    return getuserinfo
 
   @property
   def guess(self):
-    u = angeldata.get_by_key_name(self.user)
-    a = []
-    for i in u.ggg.order('-created_at').fetch(1):
-      a.append((i.ggangel, i.created_at))
-    return a
+    getuserinfo = self.guessworking
+    if getuserinfo is not None:
+      rv = '小主人覺得你是： <b>%s</b>'.decode('utf-8') % getuserinfo
+    else:
+      rv = '小主人還沒有猜你'.decode('utf-8')
+
+    return rv
+
+  @property
+  def whatiguess(self):
+    ''' Get myangel into self.guess'''
+    getuserinfo = guesstheangel(self.myangels).guessworking
+    if getuserinfo is not None:
+      rv = '我覺得小天使是： <b>%s</b>'.decode('utf-8') % getuserinfo
+    else:
+      rv = '<a href="/angelguess">我還沒有猜小天使</a>'.decode('utf-8')
+
+    return rv

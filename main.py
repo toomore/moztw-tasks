@@ -50,7 +50,7 @@ class angelgame(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     if angeldata.get_by_key_name(user.email()):
-      tip = '飛來飛去小天使<br>找來找去小主人'
+      tip = '飛來飛去小天使<br>找來找去小主人<br>'
       if angeldata.get_by_key_name(user.email()).mymaster is None:
         buildmaster = '''
 小主人的 Mail 尚未建立!
@@ -76,8 +76,8 @@ class angelgame(webapp.RequestHandler):
       try:
         getusermaster = angelmasterlist.get_by_key_name(user.email())
         angeldata(key_name = unicode(user.email()),
-                  mymaster = getusermaster.master,
-                  refs = getusermaster.key()
+                  mymaster = getusermaster.master
+                  #refs = getusermaster.key()
                   ).put()
       except:
         tip = '<img src="http://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Lucas_Cranach_d._Ä._035.jpg/300px-Lucas_Cranach_d._Ä._035.jpg"><br><br>You are out of the <a href="http://en.wikipedia.org/wiki/Garden_of_Eden">Eden</a>...'
@@ -121,11 +121,12 @@ class mailtomaster(webapp.RequestHandler):
     table = """
 <form action="/mailtomaster" method="POST">
 傳送給小主人<br>
+我的小主人是 <font color="#99aa99"><b>%s</b> <i>(%s)</i></font><br>
 <textarea name="note" cols="25" rows="7"></textarea><br>
-<input type="submit" value="傳送">
+<input type="submit" value="傳送"><br>
+%s
 </form>
-我的小主人是 <font color="#99aa99"><b>%s</b> <i>(%s)</i></font>
-""" % (mymasternickname,mymaster.split('@')[0])
+""".decode('utf-8') % (mymasternickname,mymaster.split('@')[0],guesstheangel(user.email()).guess)
 
     tv = {'tip': table,
           'menu': angelmenu(user.email()).listmenu(),
@@ -158,10 +159,11 @@ class mailtoangel(webapp.RequestHandler):
     table = """
 <form action="/mailtoangel" method="POST">
 感謝我的小天使<br>
+%s<br>
 <textarea name="note" cols="25" rows="7"></textarea><br>
 <input type="submit" value="謝謝小天使！">
 </form>
-"""
+""".decode('utf-8') % guesstheangel(user.email()).whatiguess
     tv = {'tip': table,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
@@ -319,15 +321,16 @@ class angelguess(webapp.RequestHandler):
     u = angeldata.all()
     tip = []
     r = ''
+    tr = ''
     for i in u:
       #print i.key().id_or_name()
       #i.nickname,i.key()
       if i.key().id_or_name() == user.email():
         pass
       else:
-        r = r + '<tr><td><input id="%s" name="gangel" type="radio" value="%s"></td><td><label for="%s">%s (%s)</label></td></tr>' % ((i.key().id_or_name()).split('@')[0],i.key(),(i.key().id_or_name()).split('@')[0],i.nickname,(i.key().id_or_name()).split('@')[0])
-        tr = '<div><form method="POST"><table class="ggangel">%s</table><input type="submit" value="Go"></form></div>' % r
-        tr = tr + str(guesstheangel(user.email()).guess)
+        r = r + '<tr><td><input id="%s" name="gangel" type="radio" value="%s"></td><td><label for="%s"><b>%s</b> <font color="#aabbaa"><i>(%s)</i></font></label></td></tr>' % ((i.key().id_or_name()).split('@')[0],i.key(),(i.key().id_or_name()).split('@')[0],i.nickname,(i.key().id_or_name()).split('@')[0])
+        tr = '<div><form method="POST">我覺得我的小天使是？<table class="ggangel">%s</table>可以三心兩意，想到就猜！<br><input type="submit" value="Go"></form></div>'.decode('utf-8') % r
+
     tv = {'tip': tr,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
@@ -338,8 +341,11 @@ class angelguess(webapp.RequestHandler):
     u = angeldata.get(self.request.get('gangel'))
 
     guesstheangel(user.email()).indata(u.key().id_or_name())
-
-    tv = {'tip': guesstheangel(user.email()).guess,
+    tip = '''
+%s<br><br>
+<a href="/mailtoangel">問問看</a>是不是真的！
+'''.decode('utf-8') % guesstheangel(user.email()).whatiguess
+    tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
     self.response.out.write(template.render('./template/h_index.htm',{'tv':tv}))
