@@ -114,7 +114,7 @@ class mailtomaster(webapp.RequestHandler):
       if mymasternickname is None:
         pass
       else:
-        mymasternickname = mymasternickname.encode('utf-8')
+        mymasternickname = mymasternickname
     except:
       mymasternickname = '<i>沒有設定暱稱</i>'
 

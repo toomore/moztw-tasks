@@ -175,7 +175,10 @@ class guesstheangel(angelmenu):
     if a is not None:
       b = angeldata.get_by_key_name(a)
       #getuserinfo = b.nickname + ' (%s)' % (b.key().id_or_name()).split('@')[0]
-      getuserinfo = b.nickname
+      if b.nickname is not None:
+        getuserinfo = b.nickname
+      else:
+        getuserinfo = (b.key().id_or_name()).split('@')[0]
     else:
       getuserinfo = None
 
