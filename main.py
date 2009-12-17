@@ -302,10 +302,14 @@ class chart(webapp.RequestHandler):
     fromgod = a.all().filter('sendtype =',1).count()
     fromangel = a.all().filter('sendtype =',2).count()
     frommaster = a.all().filter('sendtype =',3).count()
+    maxvalue = max(fromgod, fromangel, frommaster)
+    fromgods = fromgod * 100 / maxvalue
+    fromangels = fromangel * 100 / maxvalue
+    frommasters = frommaster * 100 / maxvalue
     loginnum = angeldata.all().count()
     allpeople = angelmasterlist.all().count()
     tip = "G: %s, A: %s, M: %s<br>Login People: %s/%s" % (fromgod,fromangel,frommaster,loginnum,allpeople)
-    img = 'http://chart.apis.google.com/chart?chs=400x100&cht=bhs&chd=t:%s,%s,%s&chxt=x,y&chxl=1:|M|A|G' % (fromgod,fromangel,frommaster)
+    img = 'http://chart.apis.google.com/chart?chs=400x100&cht=bhs&chd=t:%s,%s,%s&chxt=x,y&chxl=1:|M|A|G&chxr=0,0,100,5' % (fromgods,fromangels,frommasters)
     tv = {'tip': tip + '<br><img src="%s">' % img,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}
