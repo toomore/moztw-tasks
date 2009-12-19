@@ -7,10 +7,11 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 from google.appengine.api import mail
+from google.appengine.api import memcache
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import db
 
-import datetime
+import datetime,logging
 
 from datamodel import angeldata,angelmasterlist,guessangel
 from angelapp import angelmenu,sendmails,showmailbox,sendalluser,angelmailbox,guesstheangel
@@ -104,6 +105,7 @@ class angelgame(webapp.RequestHandler):
       u = angeldata.get_by_key_name(user.email())
       u.nickname = mm
       u.put()
+      memcache.delete('AllUserNickname')
     self.redirect('/mail')
 
 class mailtomaster(webapp.RequestHandler):
@@ -324,18 +326,24 @@ class angelguess(webapp.RequestHandler):
     #k = angeldata.get_by_key_name(user.email())
     #guessangel(ggangel = 'q@gmail.com', ref = k.key()).put()
     #print dir(guesstheangel)
-    u = angeldata.all()
-    tip = []
-    r = ''
-    tr = ''
-    for i in u:
-      #print i.key().id_or_name()
-      #i.nickname,i.key()
-      if i.key().id_or_name() == user.email():
-        pass
-      else:
-        r = r + '<tr><td><input id="%s" name="gangel" type="radio" value="%s"></td><td><label for="%s"><b>%s</b> <font color="#aabbaa"><i>(%s)</i></font></label></td></tr>' % ((i.key().id_or_name()).split('@')[0],i.key(),(i.key().id_or_name()).split('@')[0],i.nickname,(i.key().id_or_name()).split('@')[0])
-        tr = '<div><form method="POST">我覺得我的小天使是？<table class="ggangel">%s</table>可以三心兩意，想到就猜！<br><input type="submit" value="Go"></form></div>'.decode('utf-8') % r
+    mtr = memcache.get('AllUserNickname')
+    if mtr is None:
+      u = angeldata.all()
+      tip = []
+      r = ''
+      tr = ''
+      for i in u:
+        #print i.key().id_or_name()
+        #i.nickname,i.key()
+        if i.key().id_or_name() == user.email():
+          pass
+        else:
+          r = r + '<tr><td><input id="%s" name="gangel" type="radio" value="%s"></td><td><label for="%s"><b>%s</b> <font color="#aabbaa"><i>(%s)</i></font></label></td></tr>' % ((i.key().id_or_name()).split('@')[0],i.key(),(i.key().id_or_name()).split('@')[0],i.nickname,(i.key().id_or_name()).split('@')[0])
+      tr = '<div><form method="POST">我覺得我的小天使是？<table class="ggangel">%s</table>可以三心兩意，想到就猜！<br><input type="submit" value="Go"></form></div>'.decode('utf-8') % r
+      memcache.add('AllUserNickname',tr)
+      logging.info('AllUserNickname add cached.')
+    else:
+      tr = mtr
 
     tv = {'tip': tr,
           'menu': angelmenu(user.email()).listmenu(),
@@ -344,13 +352,16 @@ class angelguess(webapp.RequestHandler):
 
   def post(self):
     user = users.get_current_user()
-    u = angeldata.get(self.request.get('gangel'))
+    try:
+      u = angeldata.get(self.request.get('gangel'))
 
-    guesstheangel(user.email()).indata(u.key().id_or_name())
-    tip = '''
+      guesstheangel(user.email()).indata(u.key().id_or_name())
+      tip = '''
 %s<br><br>
 <a href="/mailtoangel">問問看</a>是不是真的！
 '''.decode('utf-8') % guesstheangel(user.email()).whatiguess
+    except:
+      tip = '<a href="/angelguess">沒按到！</a>'
     tv = {'tip': tip,
           'menu': angelmenu(user.email()).listmenu(),
           'login': "Welcome, <b>%s</b> ! (<a href=\"%s\">sign out</a>)" % (user.nickname(), users.create_logout_url("/mail"))}

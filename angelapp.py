@@ -2,6 +2,7 @@
 #coding=utf-8
 from datamodel import angeldata,angelmailbox,angelmasterlist,guessangel
 from google.appengine.api import mail
+from google.appengine.api import memcache
 import time,datetime
 from random import randrange,choice
 
@@ -64,16 +65,18 @@ class sendmails(angelmenu):
                                       context = context,
                                       sendtype = 2,
                                       sended = bool(0)).put()
+      memcache.delete_multi([self.angel,self.master])
 
     elif master:
       ## to angel, need to search data.
       an = angeldata.gql("WHERE mymaster = '%s'" % self.angel)
       
       intoangelmailbox = angelmailbox(sender = self.angel,
-                                      to = an.get().key().id_or_name(),
+                                      to = self.myangels,
                                       context = context,
                                       sendtype = 3,
                                       sended = bool(0)).put()
+      memcache.delete_multi([self.angel,self.myangels])
 
 ############### Show mail box
 class showmailbox(angelmenu):
@@ -82,18 +85,23 @@ class showmailbox(angelmenu):
 
   def show(self,per = 10):
     import time
-    findsender = angelmailbox.gql("WHERE sender = '%s' order by created_at desc" % self.angel)
-    findto = angelmailbox.gql("WHERE to = '%s' order by created_at desc" % self.angel)
-    c = {}
-    d = {}
-    for i in findsender:
-      c[int(time.mktime(i.created_at.timetuple()))] = dict(sender = i.sender, to = i.to, context = i.context, time = i.created_at)
+    c = memcache.get(self.angel)
+    if c is None:
+      findsender = angelmailbox.gql("WHERE sender = '%s' order by created_at desc" % self.angel)
+      findto = angelmailbox.gql("WHERE to = '%s' order by created_at desc" % self.angel)
+      c = {}
+      d = {}
 
-    for i in findto:
-      d[int(time.mktime(i.created_at.timetuple()))] = dict(sender = i.sender, to = i.to, context = i.context, time = i.created_at)
+      for i in findsender:
+        c[int(time.mktime(i.created_at.timetuple()))] = dict(sender = i.sender, to = i.to, context = i.context, time = i.created_at)
 
-    for i in d.keys():
-      c[i] = d[i]
+      for i in findto:
+        d[int(time.mktime(i.created_at.timetuple()))] = dict(sender = i.sender, to = i.to, context = i.context, time = i.created_at)
+
+      for i in d.keys():
+        c[i] = d[i]
+
+      memcache.add(self.angel,c)
 
     desc = c.keys()
     desc.sort(reverse=1)

@@ -4,6 +4,8 @@ from datamodel import angelmailbox
 from google.appengine.api import mail
 from angelapp import ifeelgood
 
+import logging
+
 footnote = """
 
 ♥ 幸運顏色： %s
@@ -15,7 +17,11 @@ footnote = """
 不過到這裡有用： http://moztw-tasks.appspot.com/mail
 """ % ifeelgood().good()
 
-for i in angelmailbox.gql('where sended = False limit 8'):
+mails = angelmailbox.gql('where sended = False limit 8')
+if mails.count():
+  logging.info('Mails: %s' % mails.count())
+
+for i in mails:
   i.sended = bool(1)
   i.put()
 
