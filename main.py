@@ -53,7 +53,7 @@ class angelgame(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     if angeldata.get_by_key_name(user.email()):
-      tip = '飛來飛去小天使<br>找來找去小主人<br><br>In <b>%s</b><br>遊戲就要結束了！' % str(datetime.datetime(2009,12,26) - datetime.datetime.now() + datetime.timedelta(hours=16))[:-7]
+      tip = '飛來飛去小天使<br>找來找去小主人<br><br>在 <b>%s</b> 就要跨年啦！' % str(datetime.datetime(2009,12,31) - datetime.datetime.now() + datetime.timedelta(hours=16))[:-7]
       if angeldata.get_by_key_name(user.email()).mymaster is None:
         buildmaster = '''
 小主人的 Mail 尚未建立!
