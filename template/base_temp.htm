@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+        <title>{% block title %}{% endblock %} - MozTW Volunteers</title>
+        <meta name="description" content="MozTW Volunteers">
+        <meta name="keywords" content="MozTW Volunteers,Google App Engine"> 
+        <link rel="stylesheet" type="text/css" href="/css/css.css">
+    </head>
+    <body>
+      <div class="cc">
+        <div class="desc">{% include 'menu.htm' %} {{ menu }}</div>
+        <div class="descr">{{ login }}</div>
+      </div>
+      <div class="cc top"></div>
+      <div align="right"></div>
+      <table width="100%">
+        <tr>
+          <td align="center" valign="middle">
+            {% block content %}{% endblock %}
+          </td>
+        </tr>
+      </table>
+      {% include 'h_desc.htm' %}
+    </body>
+</html>
