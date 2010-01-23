@@ -4,7 +4,12 @@ a {
 a:hover{
         color:#6666dd}
 body{
-        font-family: arial;}
+  font-size:12pt;
+        font-family: arial;
+        padding:0px;
+        margin:0px;
+        text-align:center;}
+
 input{
         font-size:14pt;
         font-family: arial;
@@ -14,7 +19,8 @@ input{
         color:#446655;}
 .desc {
         float: left;
-        margin: 1px;
+        padding:2px;
+        margin: 2px;
         font-size:10pt;
         padding: 1px;}
 .descr {
@@ -112,3 +118,46 @@ input{
 .fgreen {
         color:green;
         font-weight: bold;}
+
+#top_nav {
+  font-size:10pt;
+  margin:2px;
+  padding:2px;
+  height:16px;}
+
+#top_nav .desc_nav {
+  float:left;}
+
+#top_nav .descr_nav {
+  float:right;}
+
+
+#outer_context {
+  width:880px;
+  margin:0 auto;
+  word-wrap:break-word;}
+
+#main_context {
+  float:right;
+  width:550px;
+  text-align:left;
+  margin:5px;
+  padding:15px;
+  background:#eee;}
+
+#side_context {
+  float:left;
+  width:250px;
+  text-align:left;
+  margin:5px;
+  padding:15px;
+  background:#def;}
+
+#footer {
+  font-size:10pt;}
+
+.b-radius{
+  -moz-border-radius: 5px;
+  -webkit-border-top-left-radius: 5px;
+  -webkit-border-top-right-radius: 5px;
+  border-radius: 5px;}
