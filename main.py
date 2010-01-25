@@ -11,7 +11,7 @@ class first(webapp.RequestHandler):
   """ start up
   """
   def get(self):
-    otv = {'title': 'Index'}
+    otv = {'title': '歡迎自投羅網'}
     a = Renderer()
     a.render(self,'./template/htm_index.htm',otv)
 
