@@ -11,12 +11,12 @@ body{
         text-align:center;}
 
 input{
-        font-size:14pt;
+        font-size:12pt;
         font-family: arial;
         font-weight: bold;
         padding:4px;
         margin:4px;
-        color:#446655;}
+        color:#123;}
 .desc {
         float: left;
         padding:2px;
@@ -161,3 +161,6 @@ input{
   -webkit-border-top-left-radius: 5px;
   -webkit-border-top-right-radius: 5px;
   border-radius: 5px;}
+
+.ii {
+  background:#999;}

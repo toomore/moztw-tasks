@@ -1,0 +1,17 @@
+{% extends "base_temp_row.htm" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<form method="POST">
+  建立帳號：<br>
+  <input name="id">英文字母或數字<br>
+  設定暱稱：<br>
+  <input name="nickname"><br>
+  <input type="submit" value="建立">
+</form>
+{% endblock %}
+
+{% block content2 %}
+建立基本資料
+{% endblock %}

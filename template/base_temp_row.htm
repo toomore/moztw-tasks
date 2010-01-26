@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+        <title>{% block title %}{% endblock %} - MozTW 自投羅網</title>
+        <meta name="description" content="MozTW Volunteers 自投羅網">
+        <meta name="keywords" content="MozTW Volunteers,MozTW 自投羅網,Google App Engine"> 
+        <link rel="stylesheet" type="text/css" href="/css/css.css">
+    </head>
+    <body>
+      <div id="header">
+        <div class="cc">
+          <div id="top_nav">
+            <div class="desc_nav">{% include 'menu.htm' %} {{ menu }}</div>
+            <div class="descr_nav">{{ login }}</div>
+          </div>
+        </div>
+        <div class="cc top"></div>
+        <div align="right">[search bar.]</div>
+      </div>
+      <div id="outer_context">
+        <div id="main_context" class="b-radius">
+          {% block content %}{% endblock %}
+        </div>
+        <div id="side_context" class="b-radius">
+          {% block content2 %}{% endblock %}
+        </div>
+      </div>
+      <div class="cc">
+        {% include 'h_desc.htm' %}
+      </div>
+    </body>
+</html>
