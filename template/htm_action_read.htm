@@ -1,0 +1,20 @@
+{% extends "base_temp_row.htm" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ actname }}</h1>
+{{ actdesc }}<br>
+<input type="submit" value="我要報名參加">
+{% endblock %}
+
+{% block content2 %}
+活動時間<br>
+{{ actdate }}<br>
+<br>
+活動地點<br>
+{{ actlocation }}<br>
+<br>
+活動發起人<br>
+{{ actuser }} {{ could_edit }}<br>
+{% endblock %}

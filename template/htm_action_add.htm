@@ -4,15 +4,15 @@
 
 {% block content %}
 <form method="POST">
-活動名稱：<input name="acname" size="40"><br>
+活動名稱：<input name="acname" size="40" value="{{ actname }}"><br>
 活動時間：<input name="actime" value="{{ deftime }}"><br>
-活動地點：<input name="aclocation" size="40"><br>
+活動地點：<input name="aclocation" size="40" value="{{ actlocation }}"><br>
 活動內容：<br>
-<textarea name="des" cols="30" rows="10"></textarea><br>
+<textarea name="actdes" cols="30" rows="10">{{ actdesc }}</textarea><br>
 <input type="submit" value="送出">
 </form>
 {% endblock %}
 
 {% block content2 %}
-新增活動
+{{ sidetitle }}
 {% endblock %}

@@ -6,9 +6,9 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 
-import datetime
+import datetime,time
 from headerapp import Renderer
-from datamodel import Volunteer
+from datamodel import Volunteer,ActionEV
 
 class first(webapp.RequestHandler):
   """ index """
@@ -21,7 +21,20 @@ class action_page(webapp.RequestHandler):
   """ action """
   @login_required
   def get(self):
-    otv = {'title': '參加活動'}
+    act = ActionEV.all()
+    act_d = []
+
+    for i in act:
+      act_d.append(
+        {
+          'id': i.key().id(),
+          'actname': i.actname,
+          'actdate': str(i.actdate)[:-3]
+        }
+      )
+
+    otv = {'title': '參加活動','act': act_d}
+
     a = Renderer()
     a.render(self,'./template/htm_action.htm',otv)
 
@@ -30,16 +43,108 @@ class action_add(webapp.RequestHandler):
   @login_required
   def get(self):
     otv = {
-            'title': '新增活動',
-            'deftime': str(datetime.datetime.now() + datetime.timedelta(hours=8))[:-10]}
+      'title': '新增活動',
+      'deftime': str(datetime.datetime.now() + datetime.timedelta(hours=8))[:-10]
+    }
     a = Renderer()
     a.render(self,'./template/htm_action_add.htm',otv)
 
   def post(self):
     user = users.get_current_user()
-    userkey = Volunteer.get_by_key_name(user.email())
-    print '123'
-    print userkey.key()
+
+    if user: ## login or not
+      ## Get user key for action user ref.
+      userkey = Volunteer.get_by_key_name(user.email())
+      ## convert str to date
+      ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
+      ## create a new action
+      aev = ActionEV(
+        actname = self.request.get('acname'),
+        actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min),
+        actlocation = self.request.get('aclocation'),
+        actdesc = self.request.get('actdes'),
+        actuser = userkey.key()
+      ).put()
+      ## Go to the action page
+      self.redirect('/act/%s' % aev.id())
+    else:
+      ## wrong user
+      self.redirect('/')
+
+class action_read(webapp.RequestHandler):
+  """ action read """
+  def get(self,actno):
+    user = users.get_current_user()
+    aev = ActionEV().get_by_id(int(actno))
+    
+    if user:
+      if user.email() == aev.actuser.key().id_or_name():
+        could_edit = '<a href="/act/%s/edit">編輯</a>' % actno
+      else:
+        could_edit = ''
+    
+    if aev:
+      otv = {
+        'title': aev.actname,
+        'sidetitle': '',
+        'actname': aev.actname,
+        'actdate': str(aev.actdate)[:-3],
+        'actlocation': aev.actlocation,
+        'actdesc': aev.actdesc.replace('\r\n','<br>'),
+        'actuser': aev.actuser.nickname,
+        'could_edit': could_edit,
+        'debug': aev.actuser.key().id_or_name()
+      }
+      a = Renderer()
+      a.render(self,'./template/htm_action_read.htm',otv)
+
+class action_edit(webapp.RequestHandler):
+  """ action edit """
+  def get(self,actno):
+    user = users.get_current_user()
+    aev = ActionEV().get_by_id(int(actno))
+    
+    if user: ## login or not
+      if user.email() == aev.actuser.key().id_or_name():
+        ## correct user
+        if aev:
+          otv = {
+            'title': aev.actname,
+            'sidetitle': '編輯活動',
+            'actname': aev.actname,
+            'deftime': str(aev.actdate)[:-3],
+            'actlocation': aev.actlocation,
+            'actdesc': aev.actdesc,
+            'actuser': aev.actuser.nickname,
+            'debug': aev.actuser.key().id_or_name()
+          }
+          a = Renderer()
+          a.render(self,'./template/htm_action_add.htm',otv)
+      else:
+        ## wrong user
+        self.redirect('/')
+
+  def post(self,actno):
+    aev = ActionEV().get_by_id(int(actno))
+    user = users.get_current_user()
+
+    if user: ## login or not
+      if user.email() == aev.actuser.key().id_or_name():
+        ## correct user
+        ## convert str to date
+        ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
+        ## change the value
+        aev.actname = self.request.get('acname')
+        aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
+        aev.actlocation = self.request.get('aclocation')
+        aev.actdesc = self.request.get('actdes')
+        ## into data and get the return id.
+        a = aev.put()
+        ## Go to action page.
+        self.redirect('/act/%s' % a.id())
+      else:
+        ## wrong user
+        self.redirect('/')
 
 class userinfo(webapp.RequestHandler):
   """ create user info when first login. """
@@ -53,9 +158,10 @@ class userinfo(webapp.RequestHandler):
     user = users.get_current_user()
 
     if self.request.get('nickname') and self.request.get('id'):
-      Volunteer(key_name = user.email(),
-                nickname = self.request.get('nickname'),
-                userid = self.request.get('id')).put()
+      Volunteer(
+        key_name = user.email(),
+        nickname = self.request.get('nickname'),
+        userid = self.request.get('id')).put()
 
     self.redirect('/')
 
@@ -68,13 +174,16 @@ class errorpage(webapp.RequestHandler):
 
 def main():
   """ Start up. """
-  application = webapp.WSGIApplication([
-                              ('/', first),
-                              ('/action', action_page),
-                              ('/action/add', action_add),
-                              ('/userinfo', userinfo),
-                              ('/.*', errorpage)
-                              ],debug=True)
+  application = webapp.WSGIApplication(
+                                      [
+                                        ('/', first),
+                                        ('/action', action_page),
+                                        ('/action/add', action_add),
+                                        ('/act/(\d+)', action_read),
+                                        ('/act/(\d+)/edit', action_edit),
+                                        ('/userinfo', userinfo),
+                                        ('/.*', errorpage)
+                                      ],debug=True)
   run_wsgi_app(application)
 
 if __name__ == '__main__':
