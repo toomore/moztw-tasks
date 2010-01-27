@@ -8,7 +8,7 @@ from google.appengine.ext.webapp import template
 
 import datetime,time
 from headerapp import Renderer
-from datamodel import Volunteer,ActionEV
+from datamodel import Volunteer,ActionEV,ActionRegUser
 
 class first(webapp.RequestHandler):
   """ index """
@@ -44,6 +44,7 @@ class action_add(webapp.RequestHandler):
   def get(self):
     otv = {
       'title': '新增活動',
+      'sidetitle': '新增活動',
       'deftime': str(datetime.datetime.now() + datetime.timedelta(hours=8))[:-10]
     }
     a = Renderer()
@@ -76,17 +77,17 @@ class action_read(webapp.RequestHandler):
   def get(self,actno):
     user = users.get_current_user()
     aev = ActionEV().get_by_id(int(actno))
-    
-    if user:
-      if user.email() == aev.actuser.key().id_or_name():
-        could_edit = '<a href="/act/%s/edit">編輯</a>' % actno
-      else:
-        could_edit = ''
-    
+    could_edit = ''
+
     if aev:
+      if user:
+        if user.email() == aev.actuser.key().id_or_name():
+          could_edit = '<a href="/act/%s/edit">編輯</a>' % actno
+
       otv = {
         'title': aev.actname,
         'sidetitle': '',
+        'actno': actno,
         'actname': aev.actname,
         'actdate': str(aev.actdate)[:-3],
         'actlocation': aev.actlocation,
@@ -97,6 +98,8 @@ class action_read(webapp.RequestHandler):
       }
       a = Renderer()
       a.render(self,'./template/htm_action_read.htm',otv)
+    else:
+      self.redirect('/error')
 
 class action_edit(webapp.RequestHandler):
   """ action edit """
@@ -116,6 +119,7 @@ class action_edit(webapp.RequestHandler):
             'actlocation': aev.actlocation,
             'actdesc': aev.actdesc,
             'actuser': aev.actuser.nickname,
+            'edit_cancel': '<a href="/act/%s">取消編輯</a>' % actno,
             'debug': aev.actuser.key().id_or_name()
           }
           a = Renderer()
@@ -145,6 +149,48 @@ class action_edit(webapp.RequestHandler):
       else:
         ## wrong user
         self.redirect('/')
+
+class action_join(webapp.RequestHandler):
+  """ action edit """
+  def post(self,actno):
+    aev = ActionEV().get_by_id(int(actno))
+    user = users.get_current_user()
+
+    if aev and user: ## action and user is existed and login.
+      userV = Volunteer.get_by_key_name(user.email())
+      
+      ARU = ActionRegUser.gql(
+        "where actionregStr = '%s' and actionreguserStr = '%s'" % 
+        (
+          aev.key(),
+          Volunteer.get_by_key_name(user.email()).key()
+        )
+      )
+      #ARU = ActionRegUser.all()
+      #ARU.filter('actionreg=', aev.get())
+      #ARU.filter('actionreguser=',Volunteer.get_by_key_name(user.email()).key())
+      if ARU.count():
+        ## Join
+        print '123'
+        print ARU.count()
+        print dir(ARU.get())
+      else:
+        ## unJoin
+        regact = ActionRegUser(
+          actionreguser = userV,
+          actionreguserStr = str(userV.key()),
+          actionreg = aev,
+          actionregStr = str(aev.key())
+        ).put()
+        if regact:
+          ## RegOK Go to action page.
+          self.redirect('/act/%s' % aev.key().id())
+        else:
+          ## RegError
+          self.redirect('/')
+    else:
+      ## wrong action and user login.
+      self.redirect('/')
 
 class userinfo(webapp.RequestHandler):
   """ create user info when first login. """
@@ -181,6 +227,7 @@ def main():
                                         ('/action/add', action_add),
                                         ('/act/(\d+)', action_read),
                                         ('/act/(\d+)/edit', action_edit),
+                                        ('/act/(\d+)/join', action_join),
                                         ('/userinfo', userinfo),
                                         ('/.*', errorpage)
                                       ],debug=True)

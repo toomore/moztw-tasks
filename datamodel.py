@@ -21,3 +21,12 @@ class ActionEV(db.Model):
   actdesc = db.TextProperty()
   acttag = db.ListProperty(str)
   actuser = db.ReferenceProperty(Volunteer)
+
+class ActionRegUser(db.Model):
+  """ Action register """
+  created_at = db.DateTimeProperty(auto_now_add = True)
+  updated_at = db.DateTimeProperty(auto_now_add = True)
+  actionreguser = db.ReferenceProperty(Volunteer)
+  actionreguserStr = db.StringProperty()
+  actionreg = db.ReferenceProperty(ActionEV)
+  actionregStr = db.StringProperty()
