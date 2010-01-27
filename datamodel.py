@@ -30,3 +30,9 @@ class ActionRegUser(db.Model):
   actionreguserStr = db.StringProperty()
   actionreg = db.ReferenceProperty(ActionEV)
   actionregStr = db.StringProperty()
+
+class UserUniId(db.Model):
+  """ User uni id. key_name is uni id."""
+  created_at = db.DateTimeProperty(auto_now_add = True)
+  userVStr = db.StringProperty()
+  userV = db.ReferenceProperty(Volunteer)

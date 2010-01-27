@@ -8,7 +8,7 @@ from google.appengine.ext.webapp import template
 
 import datetime,time
 from headerapp import Renderer
-from datamodel import Volunteer,ActionEV,ActionRegUser
+from datamodel import Volunteer,ActionEV,ActionRegUser,UserUniId
 
 class first(webapp.RequestHandler):
   """ index """
@@ -82,7 +82,7 @@ class action_read(webapp.RequestHandler):
     if aev:
       if user:
         if user.email() == aev.actuser.key().id_or_name():
-          could_edit = '<a href="/act/%s/edit">編輯</a>' % actno
+          could_edit = '<a href="/act/%s/edit">編輯活動</a>' % actno
 
       otv = {
         'title': aev.actname,
@@ -92,9 +92,10 @@ class action_read(webapp.RequestHandler):
         'actdate': str(aev.actdate)[:-3],
         'actlocation': aev.actlocation,
         'actdesc': aev.actdesc.replace('\r\n','<br>'),
-        'actuser': aev.actuser.nickname,
+        'actuser': '<a href="/user/%s">%s</a>' % (
+          aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name(), aev.actuser.nickname),
         'could_edit': could_edit,
-        'debug': aev.actuser.key().id_or_name()
+        'debug': aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name()
       }
       a = Renderer()
       a.render(self,'./template/htm_action_read.htm',otv)
@@ -204,12 +205,46 @@ class userinfo(webapp.RequestHandler):
     user = users.get_current_user()
 
     if self.request.get('nickname') and self.request.get('id'):
-      Volunteer(
-        key_name = user.email(),
-        nickname = self.request.get('nickname'),
-        userid = self.request.get('id')).put()
+      try:
+        import re
+        ## verify the id
+        cid = re.search(re.compile('[\w]+'), self.request.get('id')).group().lower()
+      except:
+        self.redirect('/userinfo')
 
-    self.redirect('/')
+      idused = UserUniId.get_by_key_name(cid)
+      if idused:
+        ## used.
+        self.redirect('/userinfo')
+      else:
+        ## unused
+        user_key = Volunteer(
+          key_name = user.email(),
+          nickname = self.request.get('nickname'),
+          userid = cid
+        ).put()
+
+        UserUniId(
+          key_name = str(cid),
+          userVStr = str(user_key),
+          userV = user_key
+        ).put()
+        self.redirect('/user/%s' % cid)
+
+class user_page(webapp.RequestHandler):
+  """ create user info when first login. """
+  @login_required
+  def get(self,userid):
+    userpage = UserUniId.get_by_key_name(userid)
+    if userpage:
+      otv = {
+        'title': userpage.userV.nickname,
+        'nickname': userpage.userV.nickname
+      }
+      a = Renderer()
+      a.render(self,'./template/htm_user_page.htm',otv)
+    else:
+      self.redirect('/error') 
 
 class errorpage(webapp.RequestHandler):
   """ Error page """
@@ -229,6 +264,7 @@ def main():
                                         ('/act/(\d+)/edit', action_edit),
                                         ('/act/(\d+)/join', action_join),
                                         ('/userinfo', userinfo),
+                                        ('/user/(\w+)', user_page),
                                         ('/.*', errorpage)
                                       ],debug=True)
   run_wsgi_app(application)
