@@ -57,17 +57,20 @@ class action_add(webapp.RequestHandler):
       ## Get user key for action user ref.
       userkey = Volunteer.get_by_key_name(user.email())
       ## convert str to date
-      ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
-      ## create a new action
-      aev = ActionEV(
-        actname = self.request.get('acname'),
-        actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min),
-        actlocation = self.request.get('aclocation'),
-        actdesc = self.request.get('actdes'),
-        actuser = userkey.key()
-      ).put()
-      ## Go to the action page
-      self.redirect('/act/%s' % aev.id())
+      try:
+        ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
+        ## create a new action
+        aev = ActionEV(
+          actname = self.request.get('acname'),
+          actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min),
+          actlocation = self.request.get('aclocation'),
+          actdesc = self.request.get('actdes'),
+          actuser = userkey.key()
+        ).put()
+        ## Go to the action page
+        self.redirect('/act/%s' % aev.id())
+      except:
+        self.redirect('/action/add')
     else:
       ## wrong user
       self.redirect('/')
@@ -128,6 +131,9 @@ class action_edit(webapp.RequestHandler):
       else:
         ## wrong user
         self.redirect('/')
+    else:
+      ## not login
+      self.redirect('/')
 
   def post(self,actno):
     aev = ActionEV().get_by_id(int(actno))
@@ -137,19 +143,25 @@ class action_edit(webapp.RequestHandler):
       if user.email() == aev.actuser.key().id_or_name():
         ## correct user
         ## convert str to date
-        ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
-        ## change the value
-        aev.actname = self.request.get('acname')
-        aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
-        aev.actlocation = self.request.get('aclocation')
-        aev.actdesc = self.request.get('actdes')
-        ## into data and get the return id.
-        a = aev.put()
-        ## Go to action page.
-        self.redirect('/act/%s' % a.id())
+        try:
+          ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
+          ## change the value
+          aev.actname = self.request.get('acname')
+          aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
+          aev.actlocation = self.request.get('aclocation')
+          aev.actdesc = self.request.get('actdes')
+          ## into data.
+          aev.put()
+          ## Go to action page.
+          self.redirect('/act/%s' % actno)
+        except:
+          self.redirect('/act/%s/edit' % actno)
       else:
         ## wrong user
         self.redirect('/')
+    else:
+      ## not login
+      self.redirect('/')
 
 class action_join(webapp.RequestHandler):
   """ action edit """
@@ -173,7 +185,7 @@ class action_join(webapp.RequestHandler):
       if ARU.count():
         ## Join
         print '123'
-        print ARU.count()
+        print ActionRegUser.gql("where actionregStr = '%s'" % aev.key()).count()
         print dir(ARU.get())
       else:
         ## unJoin

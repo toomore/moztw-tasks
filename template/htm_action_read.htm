@@ -8,7 +8,6 @@
 <form method="post" action="/act/{{ actno }}/join">
   <input type="submit" value="我要報名參加">
 </form>
-{{ debug }}
 {% endblock %}
 
 {% block content2 %}
@@ -19,5 +18,7 @@
 {{ actlocation }}<br>
 <br>
 活動發起人<br>
-{{ actuser }} {{ could_edit }}<br>
+{{ actuser }}
+<br>
+{{ could_edit }}
 {% endblock %}
