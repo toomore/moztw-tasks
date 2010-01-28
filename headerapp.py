@@ -19,12 +19,17 @@ class Renderer:
         #print dir(header)
         #print 
 
-      greeting = ("<b>%s</b> 設定 <a href=\"%s\">登出</a> " % (user.nickname(), users.create_logout_url(header.request.path)))
+      greeting = (
+        "<img class='mimg' src='/images/user.png'> <b>%s</b> <img class='mimg' src='/images/vcard_edit.png'>設定 <a href=\"%s\"><img class='mimg' src='/images/user_go.png'>登出</a> " % 
+          (
+            user.nickname(), users.create_logout_url(header.request.path)
+          )
+      )
     else:
-      greeting = ("<a href=\"%s\">登入</a>. " % users.create_login_url(header.request.path))
+      greeting = ("<a href=\"%s\"><img class='mimg' src='/images/door_in.png'>登入</a> " % users.create_login_url(header.request.path))
 
     if user:
-      menu = "→ 事件｜<a href='/action'>活動</a>"
+      menu = "→ <img class='mimg' src='/images/lightning.png'>事件 <a href='/action'><img class='mimg' src='/images/calendar.png'>活動</a>"
     else:
       menu = ''
 

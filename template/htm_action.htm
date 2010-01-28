@@ -6,11 +6,11 @@
 近期活動
 <ul>
 {% for i in act %}
-<li><a href="/act/{{ i.id }}"><{{ i.id }}>{{ i.actname }}</a>({{ i.actdate }})</li>
+<li><a href="/act/{{ i.id }}"><{{ i.id }}> {{ i.actname }}</a> ({{ i.actdate }})</li>
 {% endfor %}
 </ul>
 {% endblock %}
 
 {% block content2 %}
-<a href="/action/add">新增活動</a>
+<a href="/action/add"><img class="mimg" src="/images/add.png"> 新增活動</a>
 {% endblock %}

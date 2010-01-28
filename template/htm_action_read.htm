@@ -8,17 +8,27 @@
 <form method="post" action="/act/{{ actno }}/join">
   <input type="submit" value="我要報名參加">
 </form>
+<h2>{{ join_no }}</h2>
+{% if join_user %}
+<ul>
+  {% for i in join_user%}
+  <li><a href="/user/{{ i.uniid }}">{{ i.nickname }} <img class="mimg" src="/images/vcard.png"></a></li>
+  {% endfor %}
+<ul>
+{% endif %}
 {% endblock %}
 
 {% block content2 %}
-活動時間<br>
+<img class="mimg" src="/images/time.png"> 活動時間<br>
 {{ actdate }}<br>
 <br>
-活動地點<br>
+<img class="mimg" src="/images/map.png"> 活動地點<br>
 {{ actlocation }}<br>
 <br>
-活動發起人<br>
+<img class="mimg" src="/images/user_suit.png"> 活動發起人<br>
 {{ actuser }}
 <br>
-{{ could_edit }}
+{% if could_edit %}
+<a href="/act/{{ actno }}/edit"><img class="mimg" src="/images/pencil.png"> 編輯活動</a>
+{% endif %}
 {% endblock %}

@@ -19,9 +19,9 @@ class first(webapp.RequestHandler):
 
 class action_page(webapp.RequestHandler):
   """ action """
-  @login_required
+  #@login_required
   def get(self):
-    act = ActionEV.all()
+    act = ActionEV.all().order('-actdate')
     act_d = []
 
     for i in act:
@@ -85,7 +85,17 @@ class action_read(webapp.RequestHandler):
     if aev:
       if user:
         if user.email() == aev.actuser.key().id_or_name():
-          could_edit = '<a href="/act/%s/edit">編輯活動</a>' % actno
+          #could_edit = '<a href="/act/%s/edit">編輯活動</a>' % actno
+          could_edit = 1
+
+      ActRegUser = ActionRegUser.gql("where actionregStr = '%s'" % aev.key())
+      join_user = []
+      for i in ActRegUser:
+        o = {
+          'nickname':i.actionreguser.nickname,
+          'uniid':i.actionreguser.useruniid_set.fetch(1)[0].key().id_or_name(),
+        }
+        join_user.append(o)
 
       otv = {
         'title': aev.actname,
@@ -95,8 +105,10 @@ class action_read(webapp.RequestHandler):
         'actdate': str(aev.actdate)[:-3],
         'actlocation': aev.actlocation,
         'actdesc': aev.actdesc.replace('\r\n','<br>'),
-        'actuser': '<a href="/user/%s">%s</a>' % (
+        'actuser': '<a href="/user/%s">%s <img class="mimg" src="/images/vcard.png"></a>' % (
           aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name(), aev.actuser.nickname),
+        'join_no': ActRegUser.count(),
+        'join_user': join_user,
         'could_edit': could_edit,
         'debug': aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name()
       }
@@ -184,9 +196,10 @@ class action_join(webapp.RequestHandler):
       #ARU.filter('actionreguser=',Volunteer.get_by_key_name(user.email()).key())
       if ARU.count():
         ## Join
-        print '123'
-        print ActionRegUser.gql("where actionregStr = '%s'" % aev.key()).count()
-        print dir(ARU.get())
+        #print '123'
+        #print ActionRegUser.gql("where actionregStr = '%s'" % aev.key()).count()
+        #print dir(ARU.get())
+        self.redirect('/act/%s' % aev.key().id())
       else:
         ## unJoin
         regact = ActionRegUser(
@@ -247,16 +260,20 @@ class user_page(webapp.RequestHandler):
   """ create user info when first login. """
   @login_required
   def get(self,userid):
-    userpage = UserUniId.get_by_key_name(userid)
-    if userpage:
-      otv = {
-        'title': userpage.userV.nickname,
-        'nickname': userpage.userV.nickname
-      }
-      a = Renderer()
-      a.render(self,'./template/htm_user_page.htm',otv)
+    user = users.get_current_user()
+    if user:
+      userpage = UserUniId.get_by_key_name(userid)
+      if userpage:
+        otv = {
+          'title': userpage.userV.nickname,
+          'nickname': userpage.userV.nickname
+        }
+        a = Renderer()
+        a.render(self,'./template/htm_user_page.htm',otv)
+      else:
+        self.redirect('/error')
     else:
-      self.redirect('/error') 
+      self.redirect('/')
 
 class errorpage(webapp.RequestHandler):
   """ Error page """
