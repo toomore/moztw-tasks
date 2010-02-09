@@ -20,49 +20,25 @@ __all__ = [
 from openid import oidutil
 from openid import urinorm
 from openid.yadis import services
-
 from urlparse import urlparse, urlunparse
-import re
 
 ############################################
 _protocols = ['http', 'https']
-_top_level_domains = [
-    'ac', 'ad', 'ae', 'aero', 'af', 'ag', 'ai', 'al', 'am', 'an',
-    'ao', 'aq', 'ar', 'arpa', 'as', 'asia', 'at', 'au', 'aw',
-    'ax', 'az', 'ba', 'bb', 'bd', 'be', 'bf', 'bg', 'bh', 'bi',
-    'biz', 'bj', 'bm', 'bn', 'bo', 'br', 'bs', 'bt', 'bv', 'bw',
-    'by', 'bz', 'ca', 'cat', 'cc', 'cd', 'cf', 'cg', 'ch', 'ci',
-    'ck', 'cl', 'cm', 'cn', 'co', 'com', 'coop', 'cr', 'cu', 'cv',
-    'cx', 'cy', 'cz', 'de', 'dj', 'dk', 'dm', 'do', 'dz', 'ec',
-    'edu', 'ee', 'eg', 'er', 'es', 'et', 'eu', 'fi', 'fj', 'fk',
-    'fm', 'fo', 'fr', 'ga', 'gb', 'gd', 'ge', 'gf', 'gg', 'gh',
-    'gi', 'gl', 'gm', 'gn', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt',
-    'gu', 'gw', 'gy', 'hk', 'hm', 'hn', 'hr', 'ht', 'hu', 'id',
-    'ie', 'il', 'im', 'in', 'info', 'int', 'io', 'iq', 'ir', 'is',
-    'it', 'je', 'jm', 'jo', 'jobs', 'jp', 'ke', 'kg', 'kh', 'ki',
-    'km', 'kn', 'kp', 'kr', 'kw', 'ky', 'kz', 'la', 'lb', 'lc',
-    'li', 'lk', 'lr', 'ls', 'lt', 'lu', 'lv', 'ly', 'ma', 'mc',
-    'md', 'me', 'mg', 'mh', 'mil', 'mk', 'ml', 'mm', 'mn', 'mo',
-    'mobi', 'mp', 'mq', 'mr', 'ms', 'mt', 'mu', 'museum', 'mv',
-    'mw', 'mx', 'my', 'mz', 'na', 'name', 'nc', 'ne', 'net', 'nf',
-    'ng', 'ni', 'nl', 'no', 'np', 'nr', 'nu', 'nz', 'om', 'org',
-    'pa', 'pe', 'pf', 'pg', 'ph', 'pk', 'pl', 'pm', 'pn', 'pr',
-    'pro', 'ps', 'pt', 'pw', 'py', 'qa', 're', 'ro', 'rs', 'ru',
-    'rw', 'sa', 'sb', 'sc', 'sd', 'se', 'sg', 'sh', 'si', 'sj',
-    'sk', 'sl', 'sm', 'sn', 'so', 'sr', 'st', 'su', 'sv', 'sy',
-    'sz', 'tc', 'td', 'tel', 'tf', 'tg', 'th', 'tj', 'tk', 'tl',
-    'tm', 'tn', 'to', 'tp', 'tr', 'travel', 'tt', 'tv', 'tw',
-    'tz', 'ua', 'ug', 'uk', 'us', 'uy', 'uz', 'va', 'vc', 've',
-    'vg', 'vi', 'vn', 'vu', 'wf', 'ws', 'xn--0zwm56d',
-    'xn--11b5bs3a9aj6g', 'xn--80akhbyknj4f', 'xn--9t4b11yi5a',
-    'xn--deba0ad', 'xn--g6w251d', 'xn--hgbk6aj7f53bba',
-    'xn--hlcj6aya9esc7a', 'xn--jxalpdlp', 'xn--kgbechtv',
-    'xn--zckzah', 'ye', 'yt', 'yu', 'za', 'zm', 'zw']
+_top_level_domains = (
+    'com|edu|gov|int|mil|net|org|biz|info|name|museum|coop|aero|ac|ad|ae|'
+    'af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|az|ba|bb|bd|be|bf|bg|bh|bi|bj|'
+    'bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|'
+    'cu|cv|cx|cy|cz|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|'
+    'fr|ga|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|'
+    'ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|'
+    'kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|mg|mh|mk|ml|mm|'
+    'mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|'
+    'nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|ru|rw|sa|'
+    'sb|sc|sd|se|sg|sh|si|sj|sk|sl|sm|sn|so|sr|st|sv|sy|sz|tc|td|tf|tg|th|'
+    'tj|tk|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|um|us|uy|uz|va|vc|ve|vg|vi|'
+    'vn|vu|wf|ws|ye|yt|yu|za|zm|zw'
+    ).split('|')
 
-# Build from RFC3986, section 3.2.2. Used to reject hosts with invalid
-# characters.
-host_segment_re = re.compile(
-    r"(?:[-a-zA-Z0-9!$&'\(\)\*+,;=._~]|%[a-zA-Z0-9]{2})+$")
 
 class RealmVerificationRedirected(Exception):
     """Attempting to verify this realm resulted in a redirect.
@@ -84,7 +60,7 @@ def _parseURL(url):
     try:
         url = urinorm.urinorm(url)
     except ValueError:
-        return None
+        pass
     proto, netloc, path, params, query, frag = urlparse(url)
     if not path:
         # Python <2.4 does not parse URLs with no path properly
@@ -100,17 +76,11 @@ def _parseURL(url):
             host, port = netloc.split(':')
         except ValueError:
             return None
-
-        if not re.match(r'\d+$', port):
-            return None
     else:
         host = netloc
         port = ''
 
     host = host.lower()
-    if not host_segment_re.match(host):
-        return None
-
     return proto, host, port, path
 
 class TrustRoot(object):
@@ -263,6 +233,9 @@ class TrustRoot(object):
 
         @rtype: C{NoneType} or C{L{TrustRoot}}
         """
+        if not isinstance(trust_root, (str, unicode)):
+            return None
+
         url_parts = _parseURL(trust_root)
         if url_parts is None:
             return None
@@ -305,11 +278,7 @@ class TrustRoot(object):
 
         is this a sane trust root?
         """
-        trust_root = cls.parse(trust_root_string)
-        if trust_root is None:
-            return False
-        else:
-            return trust_root.isSane()
+        return cls.parse(trust_root_string).isSane()
 
     checkSanity = classmethod(checkSanity)
 
@@ -343,7 +312,7 @@ class TrustRoot(object):
             return self.unparsed
 
     def __repr__(self):
-        return "TrustRoot(%r, %r, %r, %r, %r, %r)" % (
+        return "TrustRoot('%s', '%s', '%s', '%s', '%s', '%s')" % (
             self.unparsed, self.proto, self.wildcard, self.host, self.port,
             self.path)
 

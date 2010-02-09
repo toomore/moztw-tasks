@@ -88,11 +88,8 @@ class TestFetchException(datadriven.DataDrivenTestCase):
         DidFetch(),
         ValueError(),
         RuntimeError(),
+        'oi!',
         ]
-
-    # String exceptions are finally gone from Python 2.6.
-    if sys.version_info[:2] < (2, 6):
-        cases.append('oi!')
 
     def __init__(self, exc):
         datadriven.DataDrivenTestCase.__init__(self, repr(exc))
@@ -549,31 +546,6 @@ class TestXRIDiscovery(BaseTestDiscovery):
             display_identifier='=smoker'
             )
 
-    def test_xri_normalize(self):
-        user_xri, services = discover.discoverXRI('xri://=smoker')
-
-        self._checkService(
-            services[0],
-            used_yadis=True,
-            types=['1.0'],
-            server_url="http://www.myopenid.com/server",
-            claimed_id=XRI("=!1000"),
-            canonical_id=XRI("=!1000"),
-            local_id='http://smoker.myopenid.com/',
-            display_identifier='=smoker'
-            )
-
-        self._checkService(
-            services[1],
-            used_yadis=True,
-            types=['1.0'],
-            server_url="http://www.livejournal.com/openid/server.bml",
-            claimed_id=XRI("=!1000"),
-            canonical_id=XRI("=!1000"),
-            local_id='http://frank.livejournal.com/',
-            display_identifier='=smoker'
-            )
-
     def test_xriNoCanonicalID(self):
         user_xri, services = discover.discoverXRI('=smoker*bad')
         self.failIf(services)
@@ -765,14 +737,6 @@ class TestEndpointSupportsType(unittest.TestCase):
                                     discover.OPENID_2_0_TYPE,
                                     discover.OPENID_IDP_2_0_TYPE,
                                     )
-
-
-class TestEndpointDisplayIdentifier(unittest.TestCase):
-    def test_strip_fragment(self):
-        endpoint = discover.OpenIDServiceEndpoint()
-        endpoint.claimed_id = 'http://recycled.invalid/#123'
-        self.failUnlessEqual('http://recycled.invalid/', endpoint.getDisplayIdentifier())
-
 
 def pyUnitTests():
     return datadriven.loadTests(__name__)

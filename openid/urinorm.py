@@ -4,15 +4,6 @@ import re
 uri_pattern = r'^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'
 uri_re = re.compile(uri_pattern)
 
-# gen-delims  = ":" / "/" / "?" / "#" / "[" / "]" / "@"
-#
-# sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
-#                  / "*" / "+" / "," / ";" / "="
-#
-# unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-uri_illegal_char_re = re.compile(
-    "[^-A-Za-z0-9:/?#[\]@!$&'()*+,;=._~%]", re.UNICODE)
 
 authority_pattern = r'^([^@]*@)?([^:]*)(:.*)?'
 authority_re = re.compile(authority_pattern)
@@ -103,7 +94,7 @@ def _pct_encoded_replace(mo):
 
 def remove_dot_segments(path):
     result_segments = []
-
+    
     while path:
         if path.startswith('../'):
             path = path[3:]
@@ -132,18 +123,13 @@ def remove_dot_segments(path):
                 i = len(path)
             result_segments.append(path[:i])
             path = path[i:]
-
+            
     return ''.join(result_segments)
 
 
 def urinorm(uri):
     if isinstance(uri, unicode):
         uri = _escapeme_re.sub(_pct_escape_unicode, uri).encode('ascii')
-
-    illegal_mo = uri_illegal_char_re.search(uri)
-    if illegal_mo:
-        raise ValueError('Illegal characters in URI: %r at position %s' %
-                         (illegal_mo.group(), illegal_mo.start()))
 
     uri_mo = uri_re.match(uri)
 

@@ -19,7 +19,7 @@ class _ParseTest(unittest.TestCase):
         elif self.sanity == 'insane':
             assert not tr.isSane(), self.case
         else:
-            assert tr is None, tr
+            assert tr is None
 
 class _MatchTest(unittest.TestCase):
     def __init__(self, match, desc, line):
@@ -35,8 +35,6 @@ class _MatchTest(unittest.TestCase):
 
     def runTest(self):
         tr = TrustRoot.parse(self.tr)
-        self.failIf(tr is None, self.tr)
-
         match = tr.validateURL(self.rt)
         if self.match:
             assert match
@@ -71,7 +69,7 @@ def parseTests(data):
 
 def pyUnitTests():
     here = os.path.dirname(os.path.abspath(__file__))
-    test_data_file_name = os.path.join(here, 'data', 'trustroot.txt')
+    test_data_file_name = os.path.join(here, 'trustroot.txt')
     test_data_file = file(test_data_file_name)
     test_data = test_data_file.read()
     test_data_file.close()

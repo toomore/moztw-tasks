@@ -172,18 +172,19 @@ def getCanonicalID(iname, xrd_tree):
     xrd_list.reverse()
 
     try:
-        canonicalID = xri.XRI(xrd_list[0].findall(canonicalID_tag)[0].text)
+        canonicalID = xri.XRI(xrd_list[0].findall(canonicalID_tag)[-1].text)
     except IndexError:
         return None
 
-    childID = canonicalID.lower()
+    childID = canonicalID
 
     for xrd in xrd_list[1:]:
         # XXX: can't use rsplit until we require python >= 2.4.
         parent_sought = childID[:childID.rindex('!')]
-        parent = xri.XRI(xrd.findtext(canonicalID_tag))
-        if parent_sought != parent.lower():
-            raise XRDSFraud("%r can not come from %s" % (childID, parent))
+        parent_list = [xri.XRI(c.text) for c in xrd.findall(canonicalID_tag)]
+        if parent_sought not in parent_list:
+            raise XRDSFraud("%r can not come from any of %s" % (parent_sought,
+                                                                parent_list))
 
         childID = parent_sought
 

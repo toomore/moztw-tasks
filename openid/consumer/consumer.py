@@ -205,7 +205,6 @@ from openid.association import Association, default_negotiator, \
 from openid.dh import DiffieHellman
 from openid.store.nonce import mkNonce, split as splitNonce
 from openid.yadis.manager import Discovery
-from openid import urinorm
 
 
 __all__ = ['AuthRequest', 'Consumer', 'SuccessResponse',
@@ -248,7 +247,7 @@ def _httpResponseToMessage(response, server_url):
     if response.status == 400:
         raise ServerError.fromMessage(response_message)
 
-    elif response.status not in (200, 206):
+    elif response.status != 200:
         fmt = 'bad status code from server %s: %s'
         error_message = fmt % (server_url, response.status)
         raise fetchers.HTTPFetchingError(error_message)
@@ -384,7 +383,7 @@ class Consumer(object):
 
         return auth_req
 
-    def complete(self, query, current_url):
+    def complete(self, query, return_to):
         """Called to interpret the server's response to an OpenID
         request. It is called in step 4 of the flow described in the
         consumer overview.
@@ -392,8 +391,8 @@ class Consumer(object):
         @param query: A dictionary of the query parameters for this
             HTTP request.
 
-        @param current_url: The URL used to invoke the application.
-            Extract the URL from your application's web
+        @param return_to: The return URL used to invoke the
+            application.  Extract the URL from your application's web
             request framework and specify it here to have it checked
             against the openid.return_to value in the response.  If
             the return_to URL check fails, the status of the
@@ -410,9 +409,9 @@ class Consumer(object):
         """
 
         endpoint = self.session.get(self._token_key)
-
+        oidutil.log('Got endpoint from session: %r' % (endpoint,))
         message = Message.fromPostArgs(query)
-        response = self.consumer.complete(message, endpoint, current_url)
+        response = self.consumer.complete(message, endpoint, return_to)
 
         try:
             del self.session[self._token_key]
@@ -634,8 +633,7 @@ class GenericConsumer(object):
         if not message.isOpenID2():
             return self._completeInvalid(message, endpoint, _)
 
-        user_setup_url = message.getArg(OPENID2_NS, 'user_setup_url')
-        return SetupNeededResponse(endpoint, user_setup_url)
+        return SetupNeededResponse(endpoint)
 
     def _complete_id_res(self, message, endpoint, return_to):
         try:
@@ -671,8 +669,8 @@ class GenericConsumer(object):
 
         # The URL scheme, authority, and path MUST be the same between
         # the two URLs.
-        app_parts = urlparse(urinorm.urinorm(return_to))
-        msg_parts = urlparse(urinorm.urinorm(msg_return_to))
+        app_parts = urlparse(return_to)
+        msg_parts = urlparse(msg_return_to)
 
         # (addressing scheme, network location, path) must be equal in
         # both URLs.
@@ -822,8 +820,7 @@ class GenericConsumer(object):
         require_sigs = {
             OPENID2_NS: basic_sig_fields + ['response_nonce',
                                             'claimed_id',
-                                            'assoc_handle',
-                                            'op_endpoint',],
+                                            'assoc_handle',],
             OPENID1_NS: basic_sig_fields,
             }
 
@@ -924,7 +921,7 @@ class GenericConsumer(object):
         # request.
         if not endpoint:
             oidutil.log('No pre-discovered information supplied.')
-            endpoint = self._discoverAndVerify(to_match.claimed_id, [to_match])
+            endpoint = self._discoverAndVerify(to_match)
         else:
             # The claimed ID matches, so we use the endpoint that we
             # discovered in initiation. This should be the most common
@@ -932,12 +929,10 @@ class GenericConsumer(object):
             try:
                 self._verifyDiscoverySingle(endpoint, to_match)
             except ProtocolError, e:
-                oidutil.log(
-                    "Error attempting to use stored discovery information: " +
-                    str(e))
+                oidutil.log("Error attempting to use stored discovery information: " +
+                            str(e))
                 oidutil.log("Attempting discovery to verify endpoint")
-                endpoint = self._discoverAndVerify(
-                    to_match.claimed_id, [to_match])
+                endpoint = self._discoverAndVerify(to_match)
 
         # The endpoint we return should have the claimed ID from the
         # message we just verified, fragment and all.
@@ -973,18 +968,30 @@ class GenericConsumer(object):
         if endpoint is not None:
             try:
                 try:
+                    oidutil.log("Calling _verifyDiscoverySingle")
                     self._verifyDiscoverySingle(endpoint, to_match)
                 except TypeURIMismatch:
+                    oidutil.log("Got TypeURIMismatch, trying 1.0 endpoint")
                     self._verifyDiscoverySingle(endpoint, to_match_1_0)
             except ProtocolError, e:
                 oidutil.log("Error attempting to use stored discovery information: " +
                             str(e))
                 oidutil.log("Attempting discovery to verify endpoint")
             else:
+                oidutil.log("Success: returning endpoint")
                 return endpoint
 
+        oidutil.log("Endpoint was None, using _discoverAndVerify")
+
         # Endpoint is either bad (failed verification) or None
-        return self._discoverAndVerify(claimed_id, [to_match, to_match_1_0])
+        try:
+            return self._discoverAndVerify(to_match)
+        except TypeURIMismatch:
+            return self._discoverAndVerify(to_match_1_0)
+        except:
+            import sys
+            oidutil.log("From _discoverAndVerify: "+str(sys.exc_info()[1]))
+            raise
 
     def _verifyDiscoverySingle(self, endpoint, to_match):
         """Verify that the given endpoint matches the information
@@ -1034,7 +1041,7 @@ class GenericConsumer(object):
             raise ProtocolError('OP Endpoint mismatch. Expected %s, got %s' %
                                 (to_match.server_url, endpoint.server_url))
 
-    def _discoverAndVerify(self, claimed_id, to_match_endpoints):
+    def _discoverAndVerify(self, to_match):
         """Given an endpoint object created from the information in an
         OpenID response, perform discovery and verify the discovery
         results, returning the matching endpoint that is the result of
@@ -1049,41 +1056,38 @@ class GenericConsumer(object):
 
         @raises DiscoveryFailure: when discovery fails.
         """
-        oidutil.log('Performing discovery on %s' % (claimed_id,))
-        _, services = self._discover(claimed_id)
+        oidutil.log('Performing discovery on %s' % (to_match.claimed_id,))
+        _, services = self._discover(to_match.claimed_id)
         if not services:
             raise DiscoveryFailure('No OpenID information found at %s' %
-                                   (claimed_id,), None)
-        return self._verifyDiscoveredServices(claimed_id, services,
-                                              to_match_endpoints)
+                                   (to_match.claimed_id,), None)
+        return self._verifyDiscoveredServices(services, to_match)
 
 
-    def _verifyDiscoveredServices(self, claimed_id, services, to_match_endpoints):
+    def _verifyDiscoveredServices(self, services, to_match):
         """See @L{_discoverAndVerify}"""
 
         # Search the services resulting from discovery to find one
         # that matches the information from the assertion
         failure_messages = []
         for endpoint in services:
-            for to_match_endpoint in to_match_endpoints:
-                try:
-                    self._verifyDiscoverySingle(
-                        endpoint, to_match_endpoint)
-                except ProtocolError, why:
-                    failure_messages.append(str(why))
-                else:
-                    # It matches, so discover verification has
-                    # succeeded. Return this endpoint.
-                    return endpoint
+            try:
+                self._verifyDiscoverySingle(endpoint, to_match)
+            except ProtocolError, why:
+                failure_messages.append(str(why))
+            else:
+                # It matches, so discover verification has
+                # succeeded. Return this endpoint.
+                return endpoint
         else:
             oidutil.log('Discovery verification failure for %s' %
-                        (claimed_id,))
+                        (to_match.claimed_id,))
             for failure_message in failure_messages:
                 oidutil.log(' * Endpoint mismatch: ' + failure_message)
 
             raise DiscoveryFailure(
                 'No matching endpoint found after discovering %s'
-                % (claimed_id,), None)
+                % (to_match.claimed_id,), None)
 
     def _checkAuth(self, message, server_url):
         """Make a check_authentication request to verify this message.
@@ -1107,10 +1111,19 @@ class GenericConsumer(object):
         """Generate a check_authentication request message given an
         id_res message.
         """
+        # Arguments that are always passed to the server and not
+        # included in the signature.
+        whitelist = ['assoc_handle', 'sig', 'signed', 'invalidate_handle']
+
+        check_args = {}
+        for k in whitelist:
+            val = message.getArg(OPENID_NS, k)
+            if val is not None:
+                check_args[k] = val
+
         signed = message.getArg(OPENID_NS, 'signed')
         if signed:
             for k in signed.split(','):
-                oidutil.log(k)
                 val = message.getAliasedArg(k)
 
                 # Signed value is missing
@@ -1118,9 +1131,10 @@ class GenericConsumer(object):
                     oidutil.log('Missing signed field %r' % (k,))
                     return None
 
-        check_auth_message = message.copy()
-        check_auth_message.setArg(OPENID_NS, 'mode', 'check_authentication')
-        return check_auth_message
+                check_args[k] = val
+
+        check_args['mode'] = 'check_authentication'
+        return Message.fromOpenIDArgs(check_args)
 
     def _processCheckAuthResponse(self, response, server_url):
         """Process the response message from a check_authentication
@@ -1463,7 +1477,8 @@ class AuthRequest(object):
         self.assoc = assoc
         self.endpoint = endpoint
         self.return_to_args = {}
-        self.message = Message(endpoint.preferredNamespace())
+        self.message = Message()
+        self.message.setOpenIDNamespace(endpoint.preferredNamespace())
         self._anonymous = False
 
     def setAnonymous(self, is_anonymous):
@@ -1660,20 +1675,6 @@ class AuthRequest(object):
         return message.toFormMarkup(self.endpoint.server_url,
                     form_tag_attrs)
 
-    def htmlMarkup(self, realm, return_to=None, immediate=False,
-            form_tag_attrs=None):
-        """Get an autosubmitting HTML page that submits this request to the
-        IDP.  This is just a wrapper for formMarkup.
-
-        @see: formMarkup
-
-        @returns: str
-        """
-        return oidutil.autoSubmitHTML(self.formMarkup(realm, 
-                                                      return_to,
-                                                      immediate, 
-                                                      form_tag_attrs))
-
     def shouldSendRedirect(self):
         """Should this OpenID authentication request be sent as a HTTP
         redirect or as a POST (form submission)?
@@ -1699,19 +1700,6 @@ class Response(object):
 
     def getDisplayIdentifier(self):
         """Return the display identifier for this response.
-
-        The display identifier is related to the Claimed Identifier, but the
-        two are not always identical.  The display identifier is something the
-        user should recognize as what they entered, whereas the response's
-        claimed identifier (in the L{identity_url} attribute) may have extra
-        information for better persistence.
-
-        URLs will be stripped of their fragments for display.  XRIs will
-        display the human-readable identifier (i-name) instead of the
-        persistent identifier (i-number).
-
-        Use the display identifier in your user interface.  Use
-        L{identity_url} for querying your database or authorization server.
         """
         if self.endpoint is not None:
             return self.endpoint.getDisplayIdentifier()
@@ -1722,8 +1710,7 @@ class SuccessResponse(Response):
     successful acknowledgement from the OpenID server that the
     supplied URL is, indeed controlled by the requesting agent.
 
-    @ivar identity_url: The identity URL that has been authenticated; the Claimed Identifier.
-        See also L{getDisplayIdentifier}.
+    @ivar identity_url: The identity URL that has been authenticated
 
     @ivar endpoint: The endpoint that authenticated the identifier.  You
         may access other discovered information related to this endpoint,

@@ -9,7 +9,7 @@ module.
 @contact: U{dev@lists.openidenabled.com
     <http://lists.openidenabled.com/mailman/listinfo/dev>}
 
-@copyright: (C) 2005-2008 JanRain, Inc.
+@copyright: (C) 2005-2007 JanRain, Inc.
 
 @license: Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,25 +23,7 @@ module.
     and limitations under the License.
 """
 
-__version__ = '[library version:2.2.1]'[17:-1]
-
-__all__ = [
-    'association',
-    'consumer',
-    'cryptutil',
-    'dh',
-    'extension',
-    'extensions',
-    'fetchers',
-    'kvform',
-    'message',
-    'oidutil',
-    'server',
-    'sreg',
-    'store',
-    'urinorm',
-    'yadis',
-    ]
+__version__ = '[library version:2.1.1]'[17:-1]
 
 # Parse the version info
 try:

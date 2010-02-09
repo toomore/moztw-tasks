@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 from openid.extension import Extension
-import re
 
 ns_uri = "http://specs.openid.net/extensions/pape/1.0"
 
@@ -26,8 +25,6 @@ AUTH_MULTI_FACTOR = \
     'http://schemas.openid.net/pape/policies/2007/06/multi-factor'
 AUTH_PHISHING_RESISTANT = \
     'http://schemas.openid.net/pape/policies/2007/06/phishing-resistant'
-
-TIME_VALIDATOR = re.compile('^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
 class Request(Extension):
     """A Provider Authentication Policy request, sent from a relying
@@ -46,7 +43,7 @@ class Request(Extension):
     ns_alias = 'pape'
 
     def __init__(self, preferred_auth_policies=None, max_auth_age=None):
-        super(Request, self).__init__()
+        super(Request, self).__init__(self)
         if not preferred_auth_policies:
             preferred_auth_policies = []
 
@@ -157,15 +154,15 @@ class Response(Extension):
 
     ns_alias = 'pape'
 
-    def __init__(self, auth_policies=None, auth_time=None,
+    def __init__(self, auth_policies=None, auth_age=None,
                  nist_auth_level=None):
-        super(Response, self).__init__()
+        super(Response, self).__init__(self)
         if auth_policies:
             self.auth_policies = auth_policies
         else:
             self.auth_policies = []
 
-        self.auth_time = auth_time
+        self.auth_age = auth_age
         self.nist_auth_level = nist_auth_level
 
     def addPolicyURI(self, policy_uri):
@@ -190,23 +187,18 @@ class Response(Extension):
         @param success_response: A SuccessResponse from consumer.complete()
         @type success_response: C{L{openid.consumer.consumer.SuccessResponse}}
 
-        @rtype: Response or None
+        @rtype: Response
         @returns: A provider authentication policy response from the
-            data that was supplied with the C{id_res} response or None
-            if the provider sent no signed PAPE response arguments.
+            data that was supplied with the C{id_res} response.
         """
         self = cls()
 
         # PAPE requires that the args be signed.
         args = success_response.getSignedNS(self.ns_uri)
 
-        # Only try to construct a PAPE response if the arguments were
-        # signed in the OpenID response.  If not, return None.
-        if args is not None:
-            self.parseExtensionArgs(args)
-            return self
-        else:
-            return None
+        self.parseExtensionArgs(args)
+
+        return self
 
     def parseExtensionArgs(self, args, strict=False):
         """Parse the provider authentication policy arguments into the
@@ -222,7 +214,7 @@ class Response(Extension):
             this object.
         """
         policies_str = args.get('auth_policies')
-        if policies_str and policies_str != 'none':
+        if policies_str:
             self.auth_policies = policies_str.split(' ')
 
         nist_level_str = args.get('nist_auth_level')
@@ -239,26 +231,27 @@ class Response(Extension):
                 if 0 <= nist_level < 5:
                     self.nist_auth_level = nist_level
 
-        auth_time = args.get('auth_time')
-        if auth_time:
-            if TIME_VALIDATOR.match(auth_time):
-                self.auth_time = auth_time
-            elif strict:
-                raise ValueError("auth_time must be in RFC3339 format")
+        auth_age_str = args.get('auth_age')
+        if auth_age_str:
+            try:
+                auth_age = int(auth_age_str)
+            except ValueError:
+                if strict:
+                    raise
+            else:
+                if auth_age >= 0:
+                    self.auth_age = auth_age
+                elif strict:
+                    raise ValueError('Auth age must be above zero')
 
     fromSuccessResponse = classmethod(fromSuccessResponse)
 
     def getExtensionArgs(self):
         """@see: C{L{Extension.getExtensionArgs}}
         """
-        if len(self.auth_policies) == 0:
-            ns_args = {
-                'auth_policies':'none',
+        ns_args = {
+            'auth_policies':' '.join(self.auth_policies),
             }
-        else:
-            ns_args = {
-                'auth_policies':' '.join(self.auth_policies),
-                }
 
         if self.nist_auth_level is not None:
             if self.nist_auth_level not in range(0, 5):
@@ -266,11 +259,11 @@ class Response(Extension):
                                  'zero and four, inclusive')
             ns_args['nist_auth_level'] = str(self.nist_auth_level)
 
-        if self.auth_time is not None:
-            if not TIME_VALIDATOR.match(self.auth_time):
-                raise ValueError('auth_time must be in RFC3339 format')
+        if self.auth_age is not None:
+            if self.auth_age < 0:
+                raise ValueError('Auth age must be above zero')
 
-            ns_args['auth_time'] = self.auth_time
+            ns_args['auth_age'] = str(int(self.auth_age))
 
         return ns_args
 

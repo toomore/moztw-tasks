@@ -1,10 +1,10 @@
 from openid import message
 from openid import oidutil
-from openid.extensions import sreg
 
 import urllib
 import cgi
 import unittest
+import datadriven
 
 def mkGetArgTest(ns, key, expected=None):
     def test(self):
@@ -87,17 +87,6 @@ class EmptyMessageTest(unittest.TestCase):
     def test_hasKeyNS3(self):
         self.failUnlessEqual(self.msg.hasKey('urn:nothing-significant', 'foo'),
                              False)
-
-    def test_getAliasedArgSuccess(self):
-        msg = message.Message.fromPostArgs({'openid.ns.test': 'urn://foo',
-                                            'openid.test.flub': 'bogus'})
-        actual_uri = msg.getAliasedArg('ns.test', message.no_default)
-        self.assertEquals("urn://foo", actual_uri)
-    
-    def test_getAliasedArgFailure(self):
-        msg = message.Message.fromPostArgs({'openid.test.flub': 'bogus'})
-        self.assertRaises(KeyError,
-                          msg.getAliasedArg, 'ns.test', message.no_default)
 
     def test_getArg(self):
         # Could reasonably return None instead of raising an
@@ -401,49 +390,12 @@ class OpenID1MessageTest(unittest.TestCase):
     def test_isOpenID2(self):
         self.failIf(self.msg.isOpenID2())
 
-class OpenID1ExplicitMessageTest(unittest.TestCase):
+class OpenID1ExplicitMessageTest(OpenID1MessageTest):
     def setUp(self):
         self.msg = message.Message.fromPostArgs({'openid.mode':'error',
                                                  'openid.error':'unit test',
                                                  'openid.ns':message.OPENID1_NS
                                                  })
-
-    def test_toPostArgs(self):
-        self.failUnlessEqual(self.msg.toPostArgs(),
-                             {'openid.mode':'error',
-                              'openid.error':'unit test',
-                              'openid.ns':message.OPENID1_NS
-                              })
-
-    def test_toArgs(self):
-        self.failUnlessEqual(self.msg.toArgs(), {'mode':'error',
-                                                 'error':'unit test',
-                                                 'ns':message.OPENID1_NS})
-
-    def test_toKVForm(self):
-        self.failUnlessEqual(self.msg.toKVForm(),
-                             'error:unit test\nmode:error\nns:%s\n'
-                              %message.OPENID1_NS)
-
-    def test_toURLEncoded(self):
-        self.failUnlessEqual(self.msg.toURLEncoded(),
-                             'openid.error=unit+test&openid.mode=error&openid.ns=http%3A%2F%2Fopenid.net%2Fsignon%2F1.0')
-
-    def test_toURL(self):
-        base_url = 'http://base.url/'
-        actual = self.msg.toURL(base_url)
-        actual_base = actual[:len(base_url)]
-        self.failUnlessEqual(actual_base, base_url)
-        self.failUnlessEqual(actual[len(base_url)], '?')
-        query = actual[len(base_url) + 1:]
-        parsed = cgi.parse_qs(query)
-        self.failUnlessEqual(parsed, {'openid.mode':['error'],
-                                      'openid.error':['unit test'],
-                                      'openid.ns':[message.OPENID1_NS]
-                                      })
-
-    def test_isOpenID1(self):
-        self.failUnless(self.msg.isOpenID1())
 
 
 class OpenID2MessageTest(unittest.TestCase):
@@ -632,71 +584,6 @@ class OpenID2MessageTest(unittest.TestCase):
             self.failUnlessRaises(AssertionError, self.msg.fromPostArgs,
                                   args)
 
-    def test_mysterious_missing_namespace_bug(self):
-        """A failing test for bug #112"""
-        openid_args = {
-          'assoc_handle': '{{HMAC-SHA256}{1211477242.29743}{v5cadg==}',
-          'claimed_id': 'http://nerdbank.org/OPAffirmative/AffirmativeIdentityWithSregNoAssoc.aspx', 
-          'ns.sreg': 'http://openid.net/extensions/sreg/1.1', 
-          'response_nonce': '2008-05-22T17:27:22ZUoW5.\\NV', 
-          'signed': 'return_to,identity,claimed_id,op_endpoint,response_nonce,ns.sreg,sreg.email,sreg.nickname,assoc_handle',
-          'sig': 'e3eGZ10+TNRZitgq5kQlk5KmTKzFaCRI8OrRoXyoFa4=', 
-          'mode': 'check_authentication', 
-          'op_endpoint': 'http://nerdbank.org/OPAffirmative/ProviderNoAssoc.aspx',
-          'sreg.nickname': 'Andy',
-          'return_to': 'http://localhost.localdomain:8001/process?janrain_nonce=2008-05-22T17%3A27%3A21ZnxHULd', 
-          'invalidate_handle': '{{HMAC-SHA1}{1211477241.92242}{H0akXw==}', 
-          'identity': 'http://nerdbank.org/OPAffirmative/AffirmativeIdentityWithSregNoAssoc.aspx', 
-          'sreg.email': 'a@b.com'
-          }
-        m = message.Message.fromOpenIDArgs(openid_args)
-
-        self.failUnless(('http://openid.net/extensions/sreg/1.1', 'sreg') in
-                        list(m.namespaces.iteritems()))
-        missing = []
-        for k in openid_args['signed'].split(','):
-            if not ("openid."+k) in m.toPostArgs().keys():
-                missing.append(k)
-        self.assertEqual([], missing, missing)
-        self.assertEqual(openid_args, m.toArgs())
-        self.failUnless(m.isOpenID1())
-
-    def test_112B(self):
-        args = {'openid.assoc_handle': 'fa1f5ff0-cde4-11dc-a183-3714bfd55ca8',
-                'openid.claimed_id': 'http://binkley.lan/user/test01',
-                'openid.identity': 'http://test01.binkley.lan/',
-                'openid.mode': 'id_res',
-                'openid.ns': 'http://specs.openid.net/auth/2.0',
-                'openid.ns.pape': 'http://specs.openid.net/extensions/pape/1.0',
-                'openid.op_endpoint': 'http://binkley.lan/server',
-                'openid.pape.auth_policies': 'none',
-                'openid.pape.auth_time': '2008-01-28T20:42:36Z',
-                'openid.pape.nist_auth_level': '0',
-                'openid.response_nonce': '2008-01-28T21:07:04Z99Q=',
-                'openid.return_to': 'http://binkley.lan:8001/process?janrain_nonce=2008-01-28T21%3A07%3A02Z0tMIKx',
-                'openid.sig': 'YJlWH4U6SroB1HoPkmEKx9AyGGg=',
-                'openid.signed': 'assoc_handle,identity,response_nonce,return_to,claimed_id,op_endpoint,pape.auth_time,ns.pape,pape.nist_auth_level,pape.auth_policies'
-                }
-        m = message.Message.fromPostArgs(args)
-        missing = []
-        for k in args['openid.signed'].split(','):
-            if not ("openid."+k) in m.toPostArgs().keys():
-                missing.append(k)
-        self.assertEqual([], missing, missing)
-        self.assertEqual(args, m.toPostArgs())
-        self.failUnless(m.isOpenID2())
-
-    def test_implicit_sreg_ns(self):
-        openid_args = {
-          'sreg.email': 'a@b.com'
-          }
-        m = message.Message.fromOpenIDArgs(openid_args)
-        self.failUnless((sreg.ns_uri, 'sreg') in
-                        list(m.namespaces.iteritems()))
-        self.assertEqual('a@b.com', m.getArg(sreg.ns_uri, 'email'))
-        self.assertEqual(openid_args, m.toArgs())
-        self.failUnless(m.isOpenID1())
-
     def _test_delArgNS(self, ns):
         key = 'Camper van Beethoven'
         value = 'David Lowery'
@@ -871,87 +758,6 @@ class MessageTest(unittest.TestCase):
                               self.submit_text)
         self._checkForm(html, m, self.action_url,
                         tag_attrs, self.submit_text)
-
-
-    def test_setOpenIDNamespace_invalid(self):
-        m = message.Message()
-        invalid_things = [
-            # Empty string is not okay here.
-            '',
-            # Good guess!  But wrong.
-            'http://openid.net/signon/2.0',
-            # What?
-            u'http://specs%\\\r2Eopenid.net/auth/2.0',
-            # Too much escapings!
-            'http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0',
-            # This is a Type URI, not a openid.ns value.
-            'http://specs.openid.net/auth/2.0/signon',
-            ]
-
-        for x in invalid_things:
-            self.failUnlessRaises(message.InvalidOpenIDNamespace,
-                                  m.setOpenIDNamespace, x, False)
-
-
-    def test_isOpenID1(self):
-        v1_namespaces = [
-            # Yes, there are two of them.
-            'http://openid.net/signon/1.1',
-            'http://openid.net/signon/1.0',
-            ]
-
-        for ns in v1_namespaces:
-            m = message.Message(ns)
-            self.failUnless(m.isOpenID1(), "%r not recognized as OpenID 1" %
-                            (ns,))
-            self.failUnlessEqual(ns, m.getOpenIDNamespace())
-            self.failUnless(m.namespaces.isImplicit(ns),
-                            m.namespaces.getNamespaceURI(message.NULL_NAMESPACE))
-
-    def test_isOpenID2(self):
-        ns = 'http://specs.openid.net/auth/2.0'
-        m = message.Message(ns)
-        self.failUnless(m.isOpenID2())
-        self.failIf(m.namespaces.isImplicit(message.NULL_NAMESPACE))
-        self.failUnlessEqual(ns, m.getOpenIDNamespace())
-
-    def test_setOpenIDNamespace_explicit(self):
-        m = message.Message()
-        m.setOpenIDNamespace(message.THE_OTHER_OPENID1_NS, False)
-        self.failIf(m.namespaces.isImplicit(message.THE_OTHER_OPENID1_NS))
-
-    def test_setOpenIDNamespace_implicit(self):
-        m = message.Message()
-        m.setOpenIDNamespace(message.THE_OTHER_OPENID1_NS, True)
-        self.failUnless(m.namespaces.isImplicit(message.THE_OTHER_OPENID1_NS))
-
-
-    def test_explicitOpenID11NSSerialzation(self):
-        m = message.Message()
-        m.setOpenIDNamespace(message.THE_OTHER_OPENID1_NS, implicit=False)
-
-        post_args = m.toPostArgs()
-        self.failUnlessEqual(post_args,
-                             {'openid.ns':message.THE_OTHER_OPENID1_NS})
-
-    def test_fromPostArgs_ns11(self):
-        # An example of the stuff that some Drupal installations send us,
-        # which includes openid.ns but is 1.1.
-        query = {
-            u'openid.assoc_handle': u'',
-            u'openid.claimed_id': u'http://foobar.invalid/',
-            u'openid.identity': u'http://foobar.myopenid.com',
-            u'openid.mode': u'checkid_setup',
-            u'openid.ns': u'http://openid.net/signon/1.1',
-            u'openid.ns.sreg': u'http://openid.net/extensions/sreg/1.1',
-            u'openid.return_to': u'http://drupal.invalid/return_to',
-            u'openid.sreg.required': u'nickname,email',
-            u'openid.trust_root': u'http://drupal.invalid',
-            }
-        m = message.Message.fromPostArgs(query)
-        self.failUnless(m.isOpenID1())
-
-
 
 class NamespaceMapTest(unittest.TestCase):
     def test_onealias(self):

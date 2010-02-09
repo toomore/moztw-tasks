@@ -460,9 +460,6 @@ class SRegResponse(Extension):
         else:
             args = success_response.message.getArgs(self.ns_uri)
 
-        if not args:
-            return None
-
         for field_name in data_fields:
             if field_name in args:
                 self.data[field_name] = args[field_name]

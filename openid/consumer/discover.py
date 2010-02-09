@@ -85,12 +85,9 @@ class OpenIDServiceEndpoint(object):
     def getDisplayIdentifier(self):
         """Return the display_identifier if set, else return the claimed_id.
         """
-        if self.display_identifier is not None:
-            return self.display_identifier
-        if self.claimed_id is None:
-            return None
-        else:
-            return urlparse.urldefrag(self.claimed_id)[0]
+        if self.display_identifier is None:
+            return self.claimed_id
+        return self.display_identifier
 
     def compatibilityMode(self):
         return self.preferredNamespace() != OPENID_2_0_MESSAGE_NS
@@ -309,12 +306,6 @@ def normalizeURL(url):
     else:
         return urlparse.urldefrag(normalized)[0]
 
-def normalizeXRI(xri):
-    """Normalize an XRI, stripping its scheme if present"""
-    if xri.startswith("xri://"):
-        xri = xri[6:]
-    return xri
-
 def arrangeByType(service_list, preferred_types):
     """Rearrange service_list in a new list so services are ordered by
     types listed in preferred_types.  Return the new list."""
@@ -413,7 +404,6 @@ def discoverYadis(uri):
 
 def discoverXRI(iname):
     endpoints = []
-    iname = normalizeXRI(iname)
     try:
         canonicalID, services = xrires.ProxyResolver().query(
             iname, OpenIDServiceEndpoint.openid_type_uris)
@@ -440,7 +430,7 @@ def discoverXRI(iname):
 
 def discoverNoYadis(uri):
     http_resp = fetchers.fetch(uri)
-    if http_resp.status not in (200, 206):
+    if http_resp.status != 200:
         raise DiscoveryFailure(
             'HTTP Response status from identity URL host is not 200. '
             'Got status %r' % (http_resp.status,), http_resp)

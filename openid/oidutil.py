@@ -5,7 +5,7 @@ For users of this library, the C{L{log}} function is probably the most
 interesting.
 """
 
-__all__ = ['log', 'appendArgs', 'toBase64', 'fromBase64', 'autoSubmitHTML']
+__all__ = ['log', 'appendArgs', 'toBase64', 'fromBase64']
 
 import binascii
 import sys
@@ -20,24 +20,6 @@ elementtree_modules = [
     'cElementTree',
     'elementtree.ElementTree',
     ]
-
-def autoSubmitHTML(form, title='OpenID transaction in progress'):
-    return """
-<html>
-<head>
-  <title>%s</title>
-</head>
-<body onload="document.forms[0].submit();">
-%s
-<script>
-var elements = document.forms[0].elements;
-for (var i = 0; i < elements.length; i++) {
-  elements[i].style.display = "none";
-}
-</script>
-</body>
-</html>
-""" % (title, form)
 
 def importElementTree(module_names=None):
     """Find a working ElementTree implementation, trying the standard
@@ -71,10 +53,7 @@ def importElementTree(module_names=None):
             else:
                 return ElementTree
     else:
-        raise ImportError('No ElementTree library found. '
-                          'You may need to install one. '
-                          'Tried importing %r' % (module_names,)
-                          )
+        raise
 
 def log(message, level=0):
     """Handle a log message from the OpenID library.
@@ -167,6 +146,18 @@ def fromBase64(s):
     except binascii.Error, why:
         # Convert to a common exception type
         raise ValueError(why[0])
+
+def isAbsoluteHTTPURL(url):
+    """Does this URL look like a http or https URL that has a host?
+
+    @param url: The url to check
+    @type url: str
+
+    @return: Whether the URL looks OK
+    @rtype: bool
+    """
+    parts = urlparse.urlparse(url)
+    return parts[0] in ['http', 'https'] and parts[1]
 
 class Symbol(object):
     """This class implements an object that compares equal to others

@@ -121,14 +121,12 @@ from copy import deepcopy
 
 from openid import cryptutil
 from openid import oidutil
-from openid import kvform
 from openid.dh import DiffieHellman
 from openid.store.nonce import mkNonce
 from openid.server.trustroot import TrustRoot, verifyReturnTo
 from openid.association import Association, default_negotiator, getSecretSize
-from openid.message import Message, InvalidOpenIDNamespace, \
-     OPENID_NS, OPENID2_NS, IDENTIFIER_SELECT, OPENID1_URL_LIMIT
-from openid.urinorm import urinorm
+from openid.message import Message, OPENID_NS, OPENID1_NS, \
+     OPENID2_NS, IDENTIFIER_SELECT, OPENID1_URL_LIMIT
 
 HTTP_OK = 200
 HTTP_REDIRECT = 302
@@ -222,6 +220,7 @@ class CheckAuthRequest(OpenIDRequest):
         return self
 
     fromMessage = classmethod(fromMessage)
+
 
     def answer(self, signatory):
         """Respond to this request.
@@ -418,7 +417,7 @@ class AssociateRequest(OpenIDRequest):
         @returntype: L{AssociateRequest}
         """
         if message.isOpenID1():
-            session_type = message.getArg(OPENID_NS, 'session_type')
+            session_type = message.getArg(OPENID1_NS, 'session_type')
             if session_type == 'no-encryption':
                 oidutil.log('Received OpenID 1 request with a no-encryption '
                             'assocaition session type. Continuing anyway.')
@@ -472,11 +471,7 @@ class AssociateRequest(OpenIDRequest):
             })
         response.fields.updateArgs(OPENID_NS,
                                    self.session.answer(assoc.secret))
-
-        if not (self.session.session_type == 'no-encryption' and
-                self.message.isOpenID1()):
-            # The session type "no-encryption" did not have a name
-            # in OpenID v1, it was just omitted.
+        if self.session.session_type != 'no-encryption':
             response.fields.setArg(
                 OPENID_NS, 'session_type', self.session.session_type)
 
@@ -539,7 +534,7 @@ class CheckIDRequest(OpenIDRequest):
     """
 
     def __init__(self, identity, return_to, trust_root=None, immediate=False,
-                 assoc_handle=None, op_endpoint=None, claimed_id=None):
+                 assoc_handle=None, op_endpoint=None):
         """Construct me.
 
         These parameters are assigned directly as class attributes, see
@@ -547,9 +542,10 @@ class CheckIDRequest(OpenIDRequest):
 
         @raises MalformedReturnURL: When the C{return_to} URL is not a URL.
         """
+        self.namespace = OPENID2_NS
         self.assoc_handle = assoc_handle
         self.identity = identity
-        self.claimed_id = claimed_id or identity
+        self.claimed_id = identity
         self.return_to = return_to
         self.trust_root = trust_root or return_to
         self.op_endpoint = op_endpoint
@@ -566,15 +562,7 @@ class CheckIDRequest(OpenIDRequest):
             raise MalformedReturnURL(None, self.return_to)
         if not self.trustRootValid():
             raise UntrustedReturnURL(None, self.return_to, self.trust_root)
-        self.message = None
 
-    def _getNamespace(self):
-        warnings.warn('The "namespace" attribute of CheckIDRequest objects '
-                      'is deprecated. Use "message.getOpenIDNamespace()" '
-                      'instead', DeprecationWarning, stacklevel=2)
-        return self.message.getOpenIDNamespace()
-
-    namespace = property(_getNamespace)
 
     def fromMessage(klass, message, op_endpoint):
         """Construct me from an OpenID message.
@@ -598,6 +586,7 @@ class CheckIDRequest(OpenIDRequest):
         """
         self = klass.__new__(klass)
         self.message = message
+        self.namespace = message.getOpenIDNamespace()
         self.op_endpoint = op_endpoint
         mode = message.getArg(OPENID_NS, 'mode')
         if mode == "checkid_immediate":
@@ -608,42 +597,35 @@ class CheckIDRequest(OpenIDRequest):
             self.mode = "checkid_setup"
 
         self.return_to = message.getArg(OPENID_NS, 'return_to')
-        if message.isOpenID1() and not self.return_to:
+        if self.namespace == OPENID1_NS and not self.return_to:
             fmt = "Missing required field 'return_to' from %r"
             raise ProtocolError(message, text=fmt % (message,))
 
         self.identity = message.getArg(OPENID_NS, 'identity')
-        self.claimed_id = message.getArg(OPENID_NS, 'claimed_id')
-        if message.isOpenID1():
-            if self.identity is None:
-                s = "OpenID 1 message did not contain openid.identity"
-                raise ProtocolError(message, text=s)
-        else:
-            if self.identity and not self.claimed_id:
+        if self.identity and message.isOpenID2():
+            self.claimed_id = message.getArg(OPENID_NS, 'claimed_id')
+            if not self.claimed_id:
                 s = ("OpenID 2.0 message contained openid.identity but not "
                      "claimed_id")
                 raise ProtocolError(message, text=s)
-            elif self.claimed_id and not self.identity:
-                s = ("OpenID 2.0 message contained openid.claimed_id but not "
-                     "identity")
-                raise ProtocolError(message, text=s)
+
+        else:
+            self.claimed_id = None
+
+        if self.identity is None and self.namespace == OPENID1_NS:
+            s = "OpenID 1 message did not contain openid.identity"
+            raise ProtocolError(message, text=s)
 
         # There's a case for making self.trust_root be a TrustRoot
         # here.  But if TrustRoot isn't currently part of the "public" API,
         # I'm not sure it's worth doing.
-
-        if message.isOpenID1():
-            trust_root_param = 'trust_root'
+        if self.namespace == OPENID1_NS:
+            self.trust_root = message.getArg(
+                OPENID_NS, 'trust_root', self.return_to)
         else:
-            trust_root_param = 'realm'
+            self.trust_root = message.getArg(
+                OPENID_NS, 'realm', self.return_to)
 
-        # Using 'or' here is slightly different than sending a default
-        # argument to getArg, as it will treat no value and an empty
-        # string as equivalent.
-        self.trust_root = (message.getArg(OPENID_NS, trust_root_param)
-                           or self.return_to)
-
-        if not message.isOpenID1():
             if self.return_to is self.trust_root is None:
                 raise ProtocolError(message, "openid.realm required when " +
                                     "openid.return_to absent")
@@ -689,7 +671,7 @@ class CheckIDRequest(OpenIDRequest):
             return True
         tr = TrustRoot.parse(self.trust_root)
         if tr is None:
-            raise MalformedTrustRoot(self.message, self.trust_root)
+            raise MalformedTrustRoot(None, self.trust_root)
 
         if self.return_to is not None:
             return tr.validateURL(self.return_to)
@@ -768,16 +750,13 @@ class CheckIDRequest(OpenIDRequest):
         @returntype: L{OpenIDResponse}
 
         @change: Version 2.0 deprecates C{server_url} and adds C{claimed_id}.
-
-        @raises NoReturnError: when I do not have a return_to.
         """
-        assert self.message is not None
-
+        # FIXME: undocumented exceptions
         if not self.return_to:
             raise NoReturnToError
 
         if not server_url:
-            if not self.message.isOpenID1() and not self.op_endpoint:
+            if self.namespace != OPENID1_NS and not self.op_endpoint:
                 # In other words, that warning I raised in Server.__init__?
                 # You should pay attention to it now.
                 raise RuntimeError("%s should be constructed with op_endpoint "
@@ -787,7 +766,7 @@ class CheckIDRequest(OpenIDRequest):
 
         if allow:
             mode = 'id_res'
-        elif self.message.isOpenID1():
+        elif self.namespace == OPENID1_NS:
              if self.immediate:
                  mode = 'id_res'
              else:
@@ -800,10 +779,12 @@ class CheckIDRequest(OpenIDRequest):
 
         response = OpenIDResponse(self)
 
-        if claimed_id and self.message.isOpenID1():
-            namespace = self.message.getOpenIDNamespace()
+        if claimed_id and self.namespace == OPENID1_NS:
             raise VersionError("claimed_id is new in OpenID 2.0 and not "
-                               "available for %s" % (namespace,))
+                               "available for %s" % (self.namespace,))
+
+        if identity and not claimed_id:
+            claimed_id = identity
 
         if allow:
             if self.identity == IDENTIFIER_SELECT:
@@ -812,24 +793,16 @@ class CheckIDRequest(OpenIDRequest):
                         "This request uses IdP-driven identifier selection."
                         "You must supply an identifier in the response.")
                 response_identity = identity
-                response_claimed_id = claimed_id or identity
+                response_claimed_id = claimed_id
 
             elif self.identity:
                 if identity and (self.identity != identity):
-                    normalized_request_identity = urinorm(self.identity)
-                    normalized_answer_identity = urinorm(identity)
-
-                    if (normalized_request_identity !=
-                        normalized_answer_identity):
-                        raise ValueError(
-                            "Request was for identity %r, cannot reply "
-                            "with identity %r" % (self.identity, identity))
-
-                # The "identity" value in the response shall always be
-                # the same as that in the request, otherwise the RP is
-                # likely to not validate the response.
+                    raise ValueError(
+                        "Request was for identity %r, cannot reply "
+                        "with identity %r" % (self.identity, identity))
                 response_identity = self.identity
                 response_claimed_id = self.claimed_id
+
             else:
                 if identity:
                     raise ValueError(
@@ -837,7 +810,7 @@ class CheckIDRequest(OpenIDRequest):
                         "supplied %r" % (identity,))
                 response_identity = None
 
-            if self.message.isOpenID1() and response_identity is None:
+            if self.namespace == OPENID1_NS and response_identity is None:
                 raise ValueError(
                     "Request was an OpenID 1 request, so response must "
                     "include an identifier."
@@ -855,24 +828,20 @@ class CheckIDRequest(OpenIDRequest):
             if response_identity is not None:
                 response.fields.setArg(
                     OPENID_NS, 'identity', response_identity)
-                if self.message.isOpenID2():
+                if self.namespace == OPENID2_NS:
                     response.fields.setArg(
                         OPENID_NS, 'claimed_id', response_claimed_id)
         else:
             response.fields.setArg(OPENID_NS, 'mode', mode)
             if self.immediate:
-                if self.message.isOpenID1() and not server_url:
+                if self.namespace == OPENID1_NS and not server_url:
                     raise ValueError("setup_url is required for allow=False "
                                      "in OpenID 1.x immediate mode.")
                 # Make a new request just like me, but with immediate=False.
                 setup_request = self.__class__(
                     self.identity, self.return_to, self.trust_root,
                     immediate=False, assoc_handle=self.assoc_handle,
-                    op_endpoint=self.op_endpoint, claimed_id=self.claimed_id)
-
-                # XXX: This API is weird.
-                setup_request.message = self.message
-
+                    op_endpoint=self.op_endpoint)
                 setup_url = setup_request.encodeToURL(server_url)
                 response.fields.setArg(OPENID_NS, 'user_setup_url', setup_url)
 
@@ -886,8 +855,6 @@ class CheckIDRequest(OpenIDRequest):
         @type server_url: str
 
         @returntype: str
-
-        @raises NoReturnError: when I do not have a return_to.
         """
         if not self.return_to:
             raise NoReturnToError
@@ -901,15 +868,15 @@ class CheckIDRequest(OpenIDRequest):
              'claimed_id': self.claimed_id,
              'return_to': self.return_to}
         if self.trust_root:
-            if self.message.isOpenID1():
+            if self.namespace == OPENID1_NS:
                 q['trust_root'] = self.trust_root
             else:
                 q['realm'] = self.trust_root
         if self.assoc_handle:
             q['assoc_handle'] = self.assoc_handle
 
-        response = Message(self.message.getOpenIDNamespace())
-        response.updateArgs(OPENID_NS, q)
+        response = Message(self.namespace)
+        response.updateArgs(self.namespace, q)
         return response.toURL(server_url)
 
 
@@ -925,8 +892,6 @@ class CheckIDRequest(OpenIDRequest):
 
         @returntype: str
         @returns: The return_to URL with openid.mode = cancel.
-
-        @raises NoReturnError: when I do not have a return_to.
         """
         if not self.return_to:
             raise NoReturnToError
@@ -934,13 +899,12 @@ class CheckIDRequest(OpenIDRequest):
         if self.immediate:
             raise ValueError("Cancel is not an appropriate response to "
                              "immediate mode requests.")
-
-        response = Message(self.message.getOpenIDNamespace())
+        response = Message(self.namespace)
         response.setArg(OPENID_NS, 'mode', 'cancel')
         return response.toURL(self.return_to)
 
 
-    def __repr__(self):
+    def __str__(self):
         return '<%s id:%r im:%s tr:%r ah:%r>' % (self.__class__.__name__,
                                                  self.identity,
                                                  self.immediate,
@@ -986,32 +950,16 @@ class OpenIDResponse(object):
             self.fields)
 
 
-    def toFormMarkup(self, form_tag_attrs=None):
+    def toFormMarkup(self):
         """Returns the form markup for this response.
-
-        @param form_tag_attrs: Dictionary of attributes to be added to
-            the form tag. 'accept-charset' and 'enctype' have defaults
-            that can be overridden. If a value is supplied for
-            'action' or 'method', it will be replaced.
 
         @returntype: str
 
         @since: 2.1.0
         """
-        return self.fields.toFormMarkup(self.request.return_to,
-                                        form_tag_attrs=form_tag_attrs)
+        return self.fields.toFormMarkup(
+            self.fields.getArg(OPENID_NS, 'return_to'))
 
-    def toHTML(self, form_tag_attrs=None):
-        """Returns an HTML document that auto-submits the form markup
-        for this response.
-
-        @returntype: str
-
-        @see: toFormMarkup
-
-        @since: 2.1.?
-        """
-        return oidutil.autoSubmitHTML(self.toFormMarkup(form_tag_attrs))
 
     def renderAsForm(self):
         """Returns True if this response's encoding is
@@ -1223,10 +1171,7 @@ class Signatory(object):
             # dumb mode.
             assoc = self.createAssociation(dumb=True)
 
-        try:
-            signed_response.fields = assoc.signMessage(signed_response.fields)
-        except kvform.KVFormError, err:
-            raise EncodingError(response, explanation=str(err))
+        signed_response.fields = assoc.signMessage(signed_response.fields)
         return signed_response
 
 
@@ -1423,17 +1368,7 @@ class Decoder(object):
         if not query:
             return None
 
-        try:
-            message = Message.fromPostArgs(query)
-        except InvalidOpenIDNamespace, err:
-            # It's useful to have a Message attached to a ProtocolError, so we
-            # override the bad ns value to build a Message out of it.  Kinda
-            # kludgy, since it's made of lies, but the parts that aren't lies
-            # are more useful than a 'None'.
-            query = query.copy()
-            query['openid.ns'] = OPENID2_NS
-            message = Message.fromPostArgs(query)
-            raise ProtocolError(message, str(err))
+        message = Message.fromPostArgs(query)
 
         mode = message.getArg(OPENID_NS, 'mode')
         if not mode:
@@ -1451,7 +1386,7 @@ class Decoder(object):
             L{ProtocolError}.
         """
         mode = message.getArg(OPENID_NS, 'mode')
-        fmt = "Unrecognized OpenID mode %r"
+        fmt = "No decoder for mode %r"
         raise ProtocolError(message, text=fmt % (mode,))
 
 
@@ -1657,7 +1592,7 @@ class ProtocolError(Exception):
         @returntype: str
         """
         if self.openid_message is None:
-            return None
+            return False
         else:
             return self.openid_message.getArg(OPENID_NS, 'return_to')
 
@@ -1699,14 +1634,6 @@ class ProtocolError(Exception):
         @since: 2.1.0
         """
         return self.toMessage().toFormMarkup(self.getReturnTo())
-
-    def toHTML(self):
-        """Encode to a full HTML page, wrapping the form markup in a page
-        that will autosubmit the form.
-
-        @since: 2.1.?
-        """
-        return oidutil.autoSubmitHTML(self.toFormMarkup())
 
     def whichEncoding(self):
         """How should I be encoded?
@@ -1768,19 +1695,10 @@ class EncodingError(Exception):
     @type response: L{OpenIDResponse}
     """
 
-    def __init__(self, response, explanation=None):
+    def __init__(self, response):
         Exception.__init__(self, response)
         self.response = response
-        self.explanation = explanation
 
-    def __str__(self):
-        if self.explanation:
-            s = '%s: %s' % (self.__class__.__name__,
-                            self.explanation)
-        else:
-            s = '%s for Response %s' % (
-                self.__class__.__name__, self.response)
-        return s
 
 
 class AlreadySigned(EncodingError):

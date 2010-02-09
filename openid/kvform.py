@@ -4,9 +4,6 @@ from openid import oidutil
 
 import types
 
-class KVFormError(ValueError):
-    pass
-
 def seqToKV(seq, strict=False):
     """Represent a sequence of pairs of strings as newline-terminated
     key:value pairs. The pairs are generated in the order given.
@@ -20,7 +17,7 @@ def seqToKV(seq, strict=False):
     def err(msg):
         formatted = 'seqToKV warning: %s: %r' % (msg, seq)
         if strict:
-            raise KVFormError(formatted)
+            raise ValueError(formatted)
         else:
             oidutil.log(formatted)
 
@@ -33,28 +30,28 @@ def seqToKV(seq, strict=False):
             k = str(k)
 
         if '\n' in k:
-            raise KVFormError(
+            raise ValueError(
                 'Invalid input for seqToKV: key contains newline: %r' % (k,))
 
         if ':' in k:
-            raise KVFormError(
+            raise ValueError(
                 'Invalid input for seqToKV: key contains colon: %r' % (k,))
 
         if k.strip() != k:
-            err('Key has whitespace at beginning or end: %r' % (k,))
+            err('Key has whitespace at beginning or end: %r' % k)
 
         if isinstance(v, types.StringType):
             v = v.decode('UTF8')
         elif not isinstance(v, types.UnicodeType):
-            err('Converting value to string: %r' % (v,))
+            err('Converting value to string: %r' % v)
             v = str(v)
 
         if '\n' in v:
-            raise KVFormError(
+            raise ValueError(
                 'Invalid input for seqToKV: value contains newline: %r' % (v,))
 
         if v.strip() != v:
-            err('Value has whitespace at beginning or end: %r' % (v,))
+            err('Value has whitespace at beginning or end: %r' % v)
 
         lines.append(k + ':' + v + '\n')
 
@@ -71,7 +68,7 @@ def kvToSeq(data, strict=False):
     def err(msg):
         formatted = 'kvToSeq warning: %s: %r' % (msg, data)
         if strict:
-            raise KVFormError(formatted)
+            raise ValueError(formatted)
         else:
             oidutil.log(formatted)
 
