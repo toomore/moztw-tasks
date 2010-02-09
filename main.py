@@ -1,21 +1,203 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import cgi
+import wsgiref.handlers
+import urlparse, urllib
+import os
+import logging
+import datetime
+import time
+import Cookie
+import pprint
+import pickle
+import hashlib
+
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext import webapp
+from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 
-import datetime,time
+from openid import fetchers
+from openid.consumer.consumer import Consumer
+from openid.consumer import discover
+from fetcher import UrlfetchFetcher
+import store
+
 from headerapp import Renderer
 from datamodel import Volunteer,ActionEV,ActionRegUser,UserUniId
 
-class first(webapp.RequestHandler):
+_DEBUG = False
+
+############## Models ###################
+class Person(db.Model):
+  openid = db.StringProperty()
+  date = db.DateTimeProperty(auto_now_add=True)
+  hashedkey = db.StringProperty()
+
+  def pretty_openid(self):
+    return self.openid.replace('http://','').replace('https://','').rstrip('/').split('#')[0]
+
+  def put(self):
+    if self.hashedkey is None:
+      if self.is_saved():
+        key = self.key()
+      else:
+        key = db.Model.put(self)
+
+      self.hashedkey = hashlib.sha1(str(key)).hexdigest()
+
+    assert self.hashedkey
+    return db.Model.put(self)
+
+class Session(db.Expando):
+  # the logged in person
+  person = db.ReferenceProperty(Person)
+
+  # OpenID library session stuff
+  openid_stuff = db.TextProperty()
+
+  # when someone tries to demand a site and they aren't logged in,
+  # we store it here
+  url = db.StringProperty()
+
+  # this goes in the cookie
+  session_id = db.StringProperty()
+
+  def put(self):
+    if self.session_id is None:
+
+      if self.is_saved():
+        key = self.key() 
+      else:
+        key = db.Expando.put(self)
+
+      self.session_id = hashlib.sha1(str(key)).hexdigest()
+    else:
+      key = self.key()
+
+    assert self.session_id
+    db.Expando.put(self)
+    return key
+
+class Website(db.Model):
+  domain = db.StringProperty()
+  name = db.StringProperty()
+  votes = db.IntegerProperty()
+  date = db.DateTimeProperty(auto_now_add=True)
+  status = db.BooleanProperty()
+
+class WebsiteVote(db.Model):
+  website = db.ReferenceProperty(Website)
+  voter = db.ReferenceProperty(Person)
+  date = db.DateTimeProperty(auto_now_add=True)
+
+############# Base Handler ##############
+class BaseHandler(webapp.RequestHandler):
+  session = None
+  logged_in_person = None
+
+  def get_store(self):
+    return store.DatastoreStore()
+
+  def args_to_dict(self):
+    req = self.request
+    return dict([(arg, req.get(arg)) for arg in req.arguments()])
+
+  def has_session(self):
+    return bool(self.session)
+
+  def get_session_id_from_cookie(self):
+    if self.request.headers.has_key('Cookie'):
+      cookie = Cookie.SimpleCookie(self.request.headers['Cookie'])
+
+      if cookie.has_key('session_id'):
+        return cookie['session_id'].value
+
+    return None
+
+  def write_session_id_cookie(self, session_id):
+    expires = datetime.datetime.now() + datetime.timedelta(weeks=2)
+    expires_rfc822 = expires.strftime('%a, %d %b %Y %H:%M:%S +0000')
+    self.response.headers.add_header(
+      'Set-Cookie', 'session_id=%s; path=/; expires=%s' % (str(session_id), expires_rfc822))
+
+  def get_session(self, create=True):
+    if self.session:
+      return self.session
+
+    # get existing session
+    session_id = self.get_session_id_from_cookie()
+    if session_id:
+      sessions = Session.gql("WHERE session_id = :1", session_id)
+      if sessions.count() == 1:
+        self.session = sessions[0]
+        return self.session
+
+    if create:
+      self.session = Session()
+      self.session.put()
+      self.write_session_id_cookie(self.session.session_id)
+      return self.session
+
+    return None
+
+  def get_logged_in_person(self):
+    if self.logged_in_person:
+      return self.logged_in_person
+
+    s = self.get_session(create=False)
+    if s and s.person:
+      self.logged_in_person = s.person
+      return self.logged_in_person
+
+    return None
+
+  def render(self, template_name, extra_values={}):
+    values = {
+      'request': self.request,
+      'debug': self.request.get('deb'),
+      'lip': self.get_logged_in_person()
+      }
+    '''
+    if values['lip']:
+      values['bookmarklet'] = bookmarklet(self.request.host, values['lip'])
+    else:
+      values['bookmarklet'] = None
+    '''
+    values.update(extra_values)
+    cwd = os.path.dirname(__file__)
+    path = os.path.join(cwd, 'template', template_name + '.htm')
+    logging.debug(path)
+    self.response.out.write(template.render(path, values, debug=_DEBUG))
+
+  def report_error(self, message):
+    """Shows an error HTML page.
+
+    Args:
+    message: string
+    A detailed error message.
+    """
+    args = pprint.pformat(self.args_to_dict())
+    self.render('error', vars())
+    logging.error(message)
+
+  def show_main_page(self, error_msg=None):
+    """Do an internal (non-302) redirect to the front page.
+    Preserves the user agent's requested URL.
+    """
+    page = MainPage()
+    page.request = self.request
+    page.response = self.response
+    page.get(error_msg)
+
+############## Page Models ###################
+class first(BaseHandler):
   """ index """
   def get(self):
-    otv = {'title': '歡迎自投羅網'}
-    a = Renderer()
-    a.render(self,'./template/htm_index.htm',otv)
+    template_values = {'title': '歡迎自投羅網'}
+    self.render('htm_index', template_values)
 
 class action_page(webapp.RequestHandler):
   """ action """
@@ -282,19 +464,119 @@ class errorpage(webapp.RequestHandler):
     a = Renderer()
     a.render(self,'./template/htm_error.htm',otv)
 
+############## OpenID Models ###################
+class LoginPage(BaseHandler):
+  def get(self):
+    template_values = {'title': '登入'}
+    self.render('htm_login', template_values)
+
+class OpenIDStartSubmit(BaseHandler):
+  def post(self):
+    openid = self.request.get('openid_identifier')
+    if not openid:
+      self.show_main_page()
+      return
+
+    c = Consumer({},self.get_store())
+    try:
+      auth_request = c.begin(openid)
+    except discover.DiscoveryFailure, e:
+      logging.error('Error with begin on '+openid)
+      logging.error(str(e))
+      self.show_main_page('An error occured determining your server information.  Please try again.')
+      return
+
+    parts = list(urlparse.urlparse(self.request.uri))
+    parts[2] = 'openid-finish'
+    parts[4] = ''
+    parts[5] = ''
+    return_to = urlparse.urlunparse(parts)
+
+    realm = urlparse.urlunparse(parts[0:2] + [''] * 4)
+
+    # save the session stuff
+    session = self.get_session()
+    session.openid_stuff = pickle.dumps(c.session)
+    session.put()
+
+    # send the redirect!  we use a meta because appengine bombs out
+    # sometimes with long redirect urls
+    redirect_url = auth_request.redirectURL(realm, return_to)
+    self.response.out.write("<html><head><meta http-equiv=\"refresh\" content=\"0;url=%s\"></head><body></body></html>" % (redirect_url,))
+
+class OpenIDFinish(BaseHandler):
+  def get(self):
+    args = self.args_to_dict()
+    url = 'http://'+self.request.host+'/openid-finish'
+
+    session = self.get_session()
+    s = {}
+    if session.openid_stuff:
+      try:
+        s = pickle.loads(str(session.openid_stuff))
+      except:
+        session.openid_stuff = None
+
+    session.put()
+
+    c = Consumer(s, self.get_store())
+    auth_response = c.complete(args, url)
+
+    if auth_response.status == 'success':
+      openid = auth_response.getDisplayIdentifier()
+      persons = Person.gql('WHERE openid = :1', openid)
+      if persons.count() == 0:
+        p = Person()
+        p.openid = openid
+        p.put()
+      else:
+        p = persons[0]
+
+      s = self.get_session()
+      s.person = p.key()
+      self.logged_in_person = p
+
+      if s.url:
+        add = AddWebsiteSubmit()
+        add.request = self.request
+        add.response = self.response
+        add.vote_for(s.url, p)
+        s.url = None
+
+      s.put()
+
+      self.redirect('/home')
+
+    else:
+      self.show_main_page('OpenID verification failed :(')
+
+class LogoutSubmit(BaseHandler):
+  def get(self):
+    s = self.get_session()
+    if s:
+      s.person = None
+      s.put()
+
+    self.redirect('/')
+
+############## main Models ###################
 def main():
   """ Start up. """
   application = webapp.WSGIApplication(
                                       [
                                         ('/', first),
-                                        ('/action', action_page),
-                                        ('/action/add', action_add),
-                                        ('/act/(\d+)', action_read),
-                                        ('/act/(\d+)/edit', action_edit),
-                                        ('/act/(\d+)/join', action_join),
-                                        ('/userinfo', userinfo),
-                                        ('/user/(\w+)', user_page),
-                                        ('/.*', errorpage)
+                                        ('/login', LoginPage),
+                                        ('/logout', LogoutSubmit),
+                                        ('/openid-start', OpenIDStartSubmit),
+                                        ('/openid-finish', OpenIDFinish)
+#                                        ('/action', action_page),
+ #                                       ('/action/add', action_add),
+  #                                      ('/act/(\d+)', action_read),
+   #                                     ('/act/(\d+)/edit', action_edit),
+    #                                    ('/act/(\d+)/join', action_join),
+     #                                   ('/userinfo', userinfo),
+      #                                  ('/user/(\w+)', user_page),
+       #                                 ('/.*', errorpage)
                                       ],debug=True)
   run_wsgi_app(application)
 

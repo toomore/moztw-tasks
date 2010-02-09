@@ -1,0 +1,16 @@
+{% extends "base_temp.htm" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h2>Use OpenID Login</h2>
+<form action="/openid-start" method="post">
+<input type="text" name="openid_identifier" id="openid_identifier" />
+<input type="submit" value="驗證登入" />
+<br>
+<input type="button" value="Google" onclick="javascript:openid_identifier.value='https://www.google.com/accounts/o8/id'">
+<input type="button" value="Yahoo!!" onclick="javascript:openid_identifier.value='https://me.yahoo.com'">
+<input type="button" value="Blogger" onclick="javascript:openid_identifier.value='https://blogname.blogspot.com/'">
+<input type="button" value="OpenID" onclick="javascript:openid_identifier.value=''">
+</form>
+{% endblock %}

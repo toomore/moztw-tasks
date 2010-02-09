@@ -1,0 +1,7 @@
+            {% if lip %}
+              <a href="/home">bookmarklet</a>
+              <a href="/voter?openid={{lip.openid|urlencode}}">profile</a>
+              <a href="/logout"><img class='mimg' src='/images/openid-icon.png'>登出</a>
+            {% else %}
+              <a href="/login"><img class='mimg' src='/images/openid-icon.png'>登入</a>
+            {% endif %}
