@@ -187,7 +187,7 @@ class BaseHandler(webapp.RequestHandler):
     """Do an internal (non-302) redirect to the front page.
     Preserves the user agent's requested URL.
     """
-    page = MainPage()
+    page = errorpage()
     page.request = self.request
     page.response = self.response
     page.get(error_msg)
@@ -197,6 +197,8 @@ class first(BaseHandler):
   """ index """
   def get(self):
     template_values = {'title': '歡迎自投羅網'}
+
+    self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
     self.render('htm_index', template_values)
 
 class action_page(webapp.RequestHandler):
@@ -457,12 +459,14 @@ class user_page(webapp.RequestHandler):
     else:
       self.redirect('/')
 
-class errorpage(webapp.RequestHandler):
+class errorpage(BaseHandler):
   """ Error page """
-  def get(self):
-    otv = {'title': '錯誤頁面'}
-    a = Renderer()
-    a.render(self,'./template/htm_error.htm',otv)
+  def get(self, error_msg=None):
+    otv = {
+            'title': '錯誤頁面',
+            'error_msg': error_msg
+          }
+    self.render('htm_error', otv)
 
 ############## OpenID Models ###################
 class LoginPage(BaseHandler):
@@ -559,6 +563,26 @@ class LogoutSubmit(BaseHandler):
 
     self.redirect('/')
 
+class RelyingPartyXRDS(BaseHandler):
+  def get(self):
+    xrds = """
+<?xml version='1.0' encoding='UTF-8'?>
+<xrds:XRDS
+  xmlns:xrds='xri://$xrds'
+  xmlns:openid='http://openid.net/xmlns/1.0'
+  xmlns='xri://$xrd*($v*2.0)'>
+  <XRD>
+    <Service>
+      <Type>http://specs.openid.net/auth/2.0/return_to</Type>
+      <URI>http://%s/openid-finish</URI>
+    </Service>
+</XRD>
+</xrds:XRDS>
+""" % (self.request.host,)
+
+    self.response.headers['Content-Type'] = 'application/xrds+xml'
+    self.response.out.write(xrds)
+
 ############## main Models ###################
 def main():
   """ Start up. """
@@ -568,7 +592,8 @@ def main():
                                         ('/login', LoginPage),
                                         ('/logout', LogoutSubmit),
                                         ('/openid-start', OpenIDStartSubmit),
-                                        ('/openid-finish', OpenIDFinish)
+                                        ('/openid-finish', OpenIDFinish),
+                                        ('/rpxrds', RelyingPartyXRDS)
 #                                        ('/action', action_page),
  #                                       ('/action/add', action_add),
   #                                      ('/act/(\d+)', action_read),

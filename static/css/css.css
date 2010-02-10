@@ -156,6 +156,19 @@ input{
 #footer {
   font-size:10pt;}
 
+#openidlogin {
+  margin:5px auto;
+  padding:15px;
+  width:590px;
+  background:#efe;}
+
+#error_msg {
+  margin:5px auto;
+  padding:15px;
+  width:590px;
+  height:100px;
+  background:#fdf;}
+
 .b-radius{
   -moz-border-radius: 5px;
   -webkit-border-top-left-radius: 5px;
