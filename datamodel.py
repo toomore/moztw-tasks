@@ -4,7 +4,7 @@ from google.appengine.ext import db
 
 class Volunteer(db.Model):
   """ Volunteer basedata. """
-  created_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now = True)
   updated_at = db.DateTimeProperty(auto_now_add = True)
   nickname = db.StringProperty()
   userid = db.StringProperty()
@@ -13,7 +13,7 @@ class Volunteer(db.Model):
 
 class ActionEV(db.Model):
   """ Action data """
-  created_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now = True)
   updated_at = db.DateTimeProperty(auto_now_add = True)
   actname = db.StringProperty()
   actdate = db.DateTimeProperty()
@@ -24,7 +24,7 @@ class ActionEV(db.Model):
 
 class ActionRegUser(db.Model):
   """ Action register """
-  created_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now = True)
   updated_at = db.DateTimeProperty(auto_now_add = True)
   actionreguser = db.ReferenceProperty(Volunteer)
   actionreguserStr = db.StringProperty()
@@ -33,6 +33,6 @@ class ActionRegUser(db.Model):
 
 class UserUniId(db.Model):
   """ User uni id. key_name is uni id."""
-  created_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now = True)
   userVStr = db.StringProperty()
   userV = db.ReferenceProperty(Volunteer)

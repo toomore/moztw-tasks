@@ -81,18 +81,6 @@ class Session(db.Expando):
     db.Expando.put(self)
     return key
 
-class Website(db.Model):
-  domain = db.StringProperty()
-  name = db.StringProperty()
-  votes = db.IntegerProperty()
-  date = db.DateTimeProperty(auto_now_add=True)
-  status = db.BooleanProperty()
-
-class WebsiteVote(db.Model):
-  website = db.ReferenceProperty(Website)
-  voter = db.ReferenceProperty(Person)
-  date = db.DateTimeProperty(auto_now_add=True)
-
 ############# Base Handler ##############
 class BaseHandler(webapp.RequestHandler):
   session = None
@@ -196,7 +184,11 @@ class BaseHandler(webapp.RequestHandler):
 class first(BaseHandler):
   """ index """
   def get(self):
-    template_values = {'title': '歡迎自投羅網'}
+    lip = self.get_logged_in_person()
+    template_values = {
+      'title': '歡迎自投羅網',
+      'bug': dir(lip)
+    }
 
     self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
     self.render('htm_index', template_values)
