@@ -3,9 +3,11 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-{% if error_msg %}
   <div id="error_msg" class="b-radius">
+{% if error_msg %}
   <b>{{ error_msg }}</b>
-  </div>
+{% else %}
+  <b>No Page</b>
 {% endif %}
+  </div>
 {% endblock %}

@@ -93,6 +93,13 @@ class BaseHandler(webapp.RequestHandler):
 
     return None
 
+  def need_login(self):
+    if not self.get_logged_in_person():
+      self.show_error_page('需要登入！<br><br><a href="./login">使用 OpenID 登入</a>')
+      return False
+    else:
+      return True
+
   def render(self, template_name, extra_values={}):
     values = {
       'request': self.request,
@@ -122,7 +129,7 @@ class BaseHandler(webapp.RequestHandler):
     self.render('error', vars())
     logging.error(message)
 
-  def show_main_page(self, error_msg=None):
+  def show_error_page(self, error_msg=None):
     """Do an internal (non-302) redirect to the front page.
     Preserves the user agent's requested URL.
     """
@@ -135,14 +142,15 @@ class BaseHandler(webapp.RequestHandler):
 class first(BaseHandler):
   """ index """
   def get(self):
-    lip = self.get_logged_in_person()
-    template_values = {
-      'title': '歡迎自投羅網',
-      'bug': dir(lip)
-    }
+    if self.need_login():
+      lip = self.get_logged_in_person()
+      template_values = {
+        'title': '歡迎自投羅網',
+        'bug': self.need_login()
+      }
 
-    self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
-    self.render('htm_index', template_values)
+      self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
+      self.render('htm_index', template_values)
 
 class action_page(webapp.RequestHandler):
   """ action """
@@ -421,7 +429,7 @@ class OpenIDStartSubmit(BaseHandler):
   def post(self):
     openid = self.request.get('openid_identifier')
     if not openid:
-      self.show_main_page()
+      self.show_error_page()
       return
 
     c = Consumer({},self.get_store())
@@ -430,7 +438,7 @@ class OpenIDStartSubmit(BaseHandler):
     except discover.DiscoveryFailure, e:
       logging.error('Error with begin on '+openid)
       logging.error(str(e))
-      self.show_main_page('An error occured determining your server information.  Please try again.')
+      self.show_error_page('An error occured determining your server information.  Please try again.')
       return
 
     parts = list(urlparse.urlparse(self.request.uri))
@@ -492,10 +500,11 @@ class OpenIDFinish(BaseHandler):
 
       s.put()
 
-      self.redirect('/home')
+      #self.redirect('/home')
+      self.redirect('/')
 
     else:
-      self.show_main_page('OpenID verification failed :(')
+      self.show_error_page('OpenID verification failed :(')
 
 class LogoutSubmit(BaseHandler):
   def get(self):
@@ -536,7 +545,7 @@ def main():
                                         ('/logout', LogoutSubmit),
                                         ('/openid-start', OpenIDStartSubmit),
                                         ('/openid-finish', OpenIDFinish),
-                                        ('/rpxrds', RelyingPartyXRDS)
+                                        ('/rpxrds', RelyingPartyXRDS),
 #                                        ('/action', action_page),
  #                                       ('/action/add', action_add),
   #                                      ('/act/(\d+)', action_read),
@@ -544,7 +553,7 @@ def main():
     #                                    ('/act/(\d+)/join', action_join),
      #                                   ('/userinfo', userinfo),
       #                                  ('/user/(\w+)', user_page),
-       #                                 ('/.*', errorpage)
+                                        ('/.*', errorpage)
                                       ],debug=True)
   run_wsgi_app(application)
 
