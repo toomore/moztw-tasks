@@ -1,5 +1,5 @@
 application: moztw-tasks
-version: vol-1
+version: vol-openid
 runtime: python
 api_version: 1
 

@@ -383,6 +383,7 @@ class userinfo(BaseHandler):
       idused = UserUniId.get_by_key_name(cid)
       if idused:
         ## used.
+        logging.warning('New ID but used: %s' % cid)
         self.redirect('/userinfo')
       else:
         ## unused
