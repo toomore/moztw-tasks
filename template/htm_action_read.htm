@@ -12,7 +12,13 @@
 {% if join_user %}
 <ul>
   {% for i in join_user%}
-  <li><a href="/user/{{ i.uniid }}">{{ i.nickname }} <img class="mimg" src="/images/vcard.png"></a></li>
+  <li>
+    {% if i.uniid %}
+      <a href="/user/{{ i.uniid }}">{{ i.nickname }} <img class="mimg" src="/images/vcard.png"></a>
+    {% else %}
+      {{ i.nickname }}
+    {% endif %}
+  </li>
   {% endfor %}
 <ul>
 {% endif %}

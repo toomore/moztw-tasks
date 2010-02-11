@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#import cgi
-#import wsgiref.handlers
+
 import urlparse, urllib
 import os
 import logging
@@ -10,7 +9,6 @@ import time
 import Cookie
 import pprint
 import pickle
-#import hashlib
 
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import login_required
@@ -157,7 +155,7 @@ class first(BaseHandler):
       self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
       self.render('htm_index', template_values)
 
-class action_page(webapp.RequestHandler):
+class action_page(BaseHandler):
   """ action """
   #@login_required
   def get(self):
@@ -175,27 +173,25 @@ class action_page(webapp.RequestHandler):
 
     otv = {'title': '參加活動','act': act_d}
 
-    a = Renderer()
-    a.render(self,'./template/htm_action.htm',otv)
+    self.render('htm_action',otv)
 
-class action_add(webapp.RequestHandler):
+class action_add(BaseHandler):
   """ action add """
-  @login_required
   def get(self):
-    otv = {
-      'title': '新增活動',
-      'sidetitle': '新增活動',
-      'deftime': str(datetime.datetime.now() + datetime.timedelta(hours=8))[:-10]
-    }
-    a = Renderer()
-    a.render(self,'./template/htm_action_add.htm',otv)
+    if self.need_login():
+      otv = {
+        'title': '新增活動',
+        'sidetitle': '新增活動',
+        'deftime': str(datetime.datetime.now() + datetime.timedelta(hours=8))[:-10]
+      }
+      self.render('htm_action_add',otv)
 
   def post(self):
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
 
     if user: ## login or not
       ## Get user key for action user ref.
-      userkey = Volunteer.get_by_key_name(user.email())
+      userkey = Volunteer.get_by_key_name(user.openid)
       ## convert str to date
       try:
         ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
@@ -215,25 +211,31 @@ class action_add(webapp.RequestHandler):
       ## wrong user
       self.redirect('/')
 
-class action_read(webapp.RequestHandler):
+class action_read(BaseHandler):
   """ action read """
   def get(self,actno):
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
     aev = ActionEV().get_by_id(int(actno))
     could_edit = ''
 
     if aev:
       if user:
-        if user.email() == aev.actuser.key().id_or_name():
+        if user.openid == aev.actuser.key().id_or_name():
           #could_edit = '<a href="/act/%s/edit">編輯活動</a>' % actno
           could_edit = 1
 
       ActRegUser = ActionRegUser.gql("where actionregStr = '%s'" % aev.key())
       join_user = []
       for i in ActRegUser:
+        try:
+          ## May happened get no data when user is created after immediately.
+          uniid = i.actionreguser.useruniid_set.fetch(1)[0].key().id_or_name()
+        except:
+          uniid = None
+
         o = {
           'nickname':i.actionreguser.nickname,
-          'uniid':i.actionreguser.useruniid_set.fetch(1)[0].key().id_or_name(),
+          'uniid': uniid,
         }
         join_user.append(o)
 
@@ -252,83 +254,83 @@ class action_read(webapp.RequestHandler):
         'could_edit': could_edit,
         'debug': aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name()
       }
-      a = Renderer()
-      a.render(self,'./template/htm_action_read.htm',otv)
+      self.render('htm_action_read',otv)
     else:
       self.redirect('/error')
 
-class action_edit(webapp.RequestHandler):
+class action_edit(BaseHandler):
   """ action edit """
   def get(self,actno):
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
     aev = ActionEV().get_by_id(int(actno))
-    
-    if user: ## login or not
-      if user.email() == aev.actuser.key().id_or_name():
-        ## correct user
-        if aev:
-          otv = {
-            'title': aev.actname,
-            'sidetitle': '編輯活動',
-            'actname': aev.actname,
-            'deftime': str(aev.actdate)[:-3],
-            'actlocation': aev.actlocation,
-            'actdesc': aev.actdesc,
-            'actuser': aev.actuser.nickname,
-            'edit_cancel': '<a href="/act/%s">取消編輯</a>' % actno,
-            'debug': aev.actuser.key().id_or_name()
-          }
-          a = Renderer()
-          a.render(self,'./template/htm_action_add.htm',otv)
+
+    if self.need_login(): ## login or not
+      if user:
+        if user.openid == aev.actuser.key().id_or_name():
+          ## correct user
+          if aev:
+            otv = {
+              'title': aev.actname,
+              'sidetitle': '編輯活動',
+              'actname': aev.actname,
+              'deftime': str(aev.actdate)[:-3],
+              'actlocation': aev.actlocation,
+              'actdesc': aev.actdesc,
+              'actuser': aev.actuser.nickname,
+              'edit_cancel': '<a href="/act/%s">取消編輯</a>' % actno,
+              'debug': aev.actuser.key().id_or_name()
+            }
+            self.render('htm_action_add',otv)
+        else:
+          ## wrong user
+          self.redirect('/')
       else:
-        ## wrong user
+        ## not login
         self.redirect('/')
-    else:
-      ## not login
-      self.redirect('/')
 
   def post(self,actno):
     aev = ActionEV().get_by_id(int(actno))
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
 
-    if user: ## login or not
-      if user.email() == aev.actuser.key().id_or_name():
-        ## correct user
-        ## convert str to date
-        try:
-          ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
-          ## change the value
-          aev.actname = self.request.get('acname')
-          aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
-          aev.actlocation = self.request.get('aclocation')
-          aev.actdesc = self.request.get('actdes')
-          ## into data.
-          aev.put()
-          ## Go to action page.
-          self.redirect('/act/%s' % actno)
-        except:
-          self.redirect('/act/%s/edit' % actno)
+    if self.need_login(): ## login or not
+      if user:
+        if user.openid == aev.actuser.key().id_or_name():
+          ## correct user
+          ## convert str to date
+          try:
+            ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
+            ## change the value
+            aev.actname = self.request.get('acname')
+            aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
+            aev.actlocation = self.request.get('aclocation')
+            aev.actdesc = self.request.get('actdes')
+            ## into data.
+            aev.put()
+            ## Go to action page.
+            self.redirect('/act/%s' % actno)
+          except:
+            self.redirect('/act/%s/edit' % actno)
+        else:
+          ## wrong user
+          self.redirect('/')
       else:
-        ## wrong user
+        ## not login
         self.redirect('/')
-    else:
-      ## not login
-      self.redirect('/')
 
-class action_join(webapp.RequestHandler):
+class action_join(BaseHandler):
   """ action edit """
   def post(self,actno):
     aev = ActionEV().get_by_id(int(actno))
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
 
     if aev and user: ## action and user is existed and login.
-      userV = Volunteer.get_by_key_name(user.email())
+      userV = Volunteer.get_by_key_name(user.openid)
       
       ARU = ActionRegUser.gql(
         "where actionregStr = '%s' and actionreguserStr = '%s'" % 
         (
           aev.key(),
-          Volunteer.get_by_key_name(user.email()).key()
+          Volunteer.get_by_key_name(user.openid).key()
         )
       )
       #ARU = ActionRegUser.all()
@@ -556,11 +558,11 @@ def main():
                                         ('/openid-start', OpenIDStartSubmit),
                                         ('/openid-finish', OpenIDFinish),
                                         ('/rpxrds', RelyingPartyXRDS),
-#                                        ('/action', action_page),
- #                                       ('/action/add', action_add),
-  #                                      ('/act/(\d+)', action_read),
-   #                                     ('/act/(\d+)/edit', action_edit),
-    #                                    ('/act/(\d+)/join', action_join),
+                                        ('/action', action_page),
+                                        ('/action/add', action_add),
+                                        ('/act/(\d+)', action_read),
+                                        ('/act/(\d+)/edit', action_edit),
+                                        ('/act/(\d+)/join', action_join),
                                         ('/userinfo', userinfo),
                                         ('/user/(\w+)', user_page),
                                         ('/.*', errorpage)

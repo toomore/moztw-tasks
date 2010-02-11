@@ -6,8 +6,8 @@ class Volunteer(db.Model):
   """ Volunteer basedata.
     - key_name: openid
   """
-  created_at = db.DateTimeProperty(auto_now = True)
-  updated_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now_add = True)
+  updated_at = db.DateTimeProperty(auto_now = True)
   nickname = db.StringProperty()
   userid = db.StringProperty()
   location = db.StringProperty()
@@ -15,8 +15,8 @@ class Volunteer(db.Model):
 
 class ActionEV(db.Model):
   """ Action data """
-  created_at = db.DateTimeProperty(auto_now = True)
-  updated_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now_add = True)
+  updated_at = db.DateTimeProperty(auto_now = True)
   actname = db.StringProperty()
   actdate = db.DateTimeProperty()
   actlocation = db.PostalAddressProperty()
@@ -26,8 +26,8 @@ class ActionEV(db.Model):
 
 class ActionRegUser(db.Model):
   """ Action register """
-  created_at = db.DateTimeProperty(auto_now = True)
-  updated_at = db.DateTimeProperty(auto_now_add = True)
+  created_at = db.DateTimeProperty(auto_now_add = True)
+  updated_at = db.DateTimeProperty(auto_now = True)
   actionreguser = db.ReferenceProperty(Volunteer)
   actionreguserStr = db.StringProperty()
   actionreg = db.ReferenceProperty(ActionEV)
@@ -35,6 +35,6 @@ class ActionRegUser(db.Model):
 
 class UserUniId(db.Model):
   """ User uni id. key_name is uni id."""
-  created_at = db.DateTimeProperty(auto_now = True)
+  created_at = db.DateTimeProperty(auto_now_add = True)
   userVStr = db.StringProperty()
   userV = db.ReferenceProperty(Volunteer)
