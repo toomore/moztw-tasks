@@ -221,7 +221,7 @@ class action_read(BaseHandler):
     if aev:
       if user:
         if user.openid == aev.actuser.key().id_or_name():
-          #could_edit = '<a href="/act/%s/edit">編輯活動</a>' % actno
+          ## could edit
           could_edit = 1
 
       ActRegUser = ActionRegUser.gql("where actionregStr = '%s'" % aev.key())
@@ -333,14 +333,8 @@ class action_join(BaseHandler):
           Volunteer.get_by_key_name(user.openid).key()
         )
       )
-      #ARU = ActionRegUser.all()
-      #ARU.filter('actionreg=', aev.get())
-      #ARU.filter('actionreguser=',Volunteer.get_by_key_name(user.email()).key())
+
       if ARU.count():
-        ## Join
-        #print '123'
-        #print ActionRegUser.gql("where actionregStr = '%s'" % aev.key()).count()
-        #print dir(ARU.get())
         self.redirect('/act/%s' % aev.key().id())
       else:
         ## unJoin
@@ -512,7 +506,6 @@ class OpenIDFinish(BaseHandler):
 
       s.put()
 
-      #self.redirect('/home')
       self.redirect('/')
 
     else:
