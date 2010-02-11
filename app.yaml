@@ -29,6 +29,12 @@ handlers:
   static_files: static/css/\1
   upload: static/css/(.*)
 
+## Appstats
+- url: /stats.*
+  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
+  secure: always
+  login: admin
+
 ## Main WSGI
 - url: .*
   script: main.py
