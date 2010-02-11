@@ -29,7 +29,7 @@ from headerapp import Renderer
 from datamodel import Volunteer,ActionEV,ActionRegUser,UserUniId
 from openiddatamodel import Person,Session
 
-_DEBUG = False
+_DEBUG = True
 
 
 ############# Base Handler ##############
@@ -93,12 +93,16 @@ class BaseHandler(webapp.RequestHandler):
 
     return None
 
+  ## new add
   def need_login(self):
     if not self.get_logged_in_person():
-      self.show_error_page('需要登入！<br><br><a href="./login">使用 OpenID 登入</a>')
+      self.show_error_page('需要登入！<br><br><a href="/login">使用 OpenID 登入</a>')
       return False
     else:
       return True
+
+  def get_in_volunteer(self,openid):
+    return Volunteer.get_by_key_name(str(openid))
 
   def render(self, template_name, extra_values={}):
     values = {
@@ -106,12 +110,13 @@ class BaseHandler(webapp.RequestHandler):
       'debug': self.request.get('deb'),
       'lip': self.get_logged_in_person()
       }
-    '''
+
+    ## to check the user create user info page or not.
     if values['lip']:
-      values['bookmarklet'] = bookmarklet(self.request.host, values['lip'])
-    else:
-      values['bookmarklet'] = None
-    '''
+      if not(self.get_in_volunteer(values['lip'].openid)):
+        if self.request.path != '/userinfo':
+          self.redirect('/userinfo')
+
     values.update(extra_values)
     cwd = os.path.dirname(__file__)
     path = os.path.join(cwd, 'template', template_name + '.htm')
@@ -146,7 +151,7 @@ class first(BaseHandler):
       lip = self.get_logged_in_person()
       template_values = {
         'title': '歡迎自投羅網',
-        'bug': self.need_login()
+        'bug': lip.openid
       }
 
       self.response.headers['X-XRDS-Location'] = 'http://'+self.request.host+'/rpxrds'
@@ -353,16 +358,19 @@ class action_join(webapp.RequestHandler):
       ## wrong action and user login.
       self.redirect('/')
 
-class userinfo(webapp.RequestHandler):
+class userinfo(BaseHandler):
   """ create user info when first login. """
-  @login_required
   def get(self):
-    otv = {'title': '建立基本資料'}
-    a = Renderer()
-    a.render(self,'./template/htm_userinfo.htm',otv)
+    if not self.need_login():
+      pass
+    else:
+      otv = {'title': '建立基本資料'}
+      self.render('htm_userinfo',otv)
 
   def post(self):
-    user = users.get_current_user()
+    user = self.get_logged_in_person()
+    if not user:
+      self.redirect('/error')
 
     if self.request.get('nickname') and self.request.get('id'):
       try:
@@ -379,7 +387,7 @@ class userinfo(webapp.RequestHandler):
       else:
         ## unused
         user_key = Volunteer(
-          key_name = user.email(),
+          key_name = user.openid,
           nickname = self.request.get('nickname'),
           userid = cid
         ).put()
@@ -391,24 +399,25 @@ class userinfo(webapp.RequestHandler):
         ).put()
         self.redirect('/user/%s' % cid)
 
-class user_page(webapp.RequestHandler):
-  """ create user info when first login. """
-  @login_required
+class user_page(BaseHandler):
+  """ Show user info page. """
   def get(self,userid):
-    user = users.get_current_user()
-    if user:
-      userpage = UserUniId.get_by_key_name(userid)
-      if userpage:
-        otv = {
-          'title': userpage.userV.nickname,
-          'nickname': userpage.userV.nickname
-        }
-        a = Renderer()
-        a.render(self,'./template/htm_user_page.htm',otv)
+    if not self.need_login():
+      pass
+    else:
+      user = self.get_logged_in_person()
+      if user:
+        userpage = UserUniId.get_by_key_name(userid)
+        if userpage:
+          otv = {
+            'title': userpage.userV.nickname,
+            'nickname': userpage.userV.nickname
+          }
+          self.render('htm_user_page',otv)
+        else:
+          self.redirect('/error')
       else:
         self.redirect('/error')
-    else:
-      self.redirect('/')
 
 class errorpage(BaseHandler):
   """ Error page """
@@ -551,8 +560,8 @@ def main():
   #                                      ('/act/(\d+)', action_read),
    #                                     ('/act/(\d+)/edit', action_edit),
     #                                    ('/act/(\d+)/join', action_join),
-     #                                   ('/userinfo', userinfo),
-      #                                  ('/user/(\w+)', user_page),
+                                        ('/userinfo', userinfo),
+                                        ('/user/(\w+)', user_page),
                                         ('/.*', errorpage)
                                       ],debug=True)
   run_wsgi_app(application)

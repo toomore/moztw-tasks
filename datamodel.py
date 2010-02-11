@@ -3,7 +3,9 @@
 from google.appengine.ext import db
 
 class Volunteer(db.Model):
-  """ Volunteer basedata. """
+  """ Volunteer basedata.
+    - key_name: openid
+  """
   created_at = db.DateTimeProperty(auto_now = True)
   updated_at = db.DateTimeProperty(auto_now_add = True)
   nickname = db.StringProperty()
