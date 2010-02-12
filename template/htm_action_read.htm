@@ -3,8 +3,8 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<h1>{{ actname }}</h1>
-{{ actdesc }}<br>
+<h1>{{ actname|escape }}</h1>
+{{ actdesc|removetags:"script" }}<br>
 <form method="post" action="/act/{{ actno }}/join">
   <input type="submit" value="我要報名參加">
 </form>
@@ -29,7 +29,7 @@
 {{ actdate }}<br>
 <br>
 <img class="mimg" src="/images/map.png"> 活動地點<br>
-{{ actlocation }}<br>
+{{ actlocation|escape }}<br>
 <br>
 <img class="mimg" src="/images/user_suit.png"> 活動發起人<br>
 {{ actuser }}

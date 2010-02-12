@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+'''
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
+from google.appengine.dist import use_library
+use_library('django', '1.0')
+'''
 import urlparse, urllib
 import os
 import logging
@@ -106,7 +112,7 @@ class BaseHandler(webapp.RequestHandler):
     values = {
       'request': self.request,
       'debug': self.request.get('deb'),
-      'lip': self.get_logged_in_person()
+      'lip': self.get_logged_in_person(),
       }
 
     ## to check the user create user info page or not.
@@ -114,6 +120,11 @@ class BaseHandler(webapp.RequestHandler):
       if not(self.get_in_volunteer(values['lip'].openid)):
         if self.request.path != '/userinfo':
           self.redirect('/userinfo')
+      else:
+        values_n = {
+          'nickname': self.get_in_volunteer(values['lip'].openid).useruniid_set.fetch(1)[0].key().id_or_name()
+        }
+        values.update(values_n)
 
     values.update(extra_values)
     cwd = os.path.dirname(__file__)
@@ -246,7 +257,7 @@ class action_read(BaseHandler):
         'actname': aev.actname,
         'actdate': str(aev.actdate)[:-3],
         'actlocation': aev.actlocation,
-        'actdesc': aev.actdesc.replace('\r\n','<br>'),
+        'actdesc': aev.actdesc,
         'actuser': '<a href="/user/%s">%s <img class="mimg" src="/images/vcard.png"></a>' % (
           aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name(), aev.actuser.nickname),
         'join_no': ActRegUser.count(),
@@ -370,9 +381,11 @@ class userinfo(BaseHandler):
 
     if self.request.get('nickname') and self.request.get('id'):
       try:
-        import re
         ## verify the id
+        import re
+        from cgi import escape
         cid = re.search(re.compile('[\w]+'), self.request.get('id')).group().lower()
+        cnk = escape(self.request.get('nickname'))
       except:
         self.redirect('/userinfo')
 
@@ -385,7 +398,7 @@ class userinfo(BaseHandler):
         ## unused
         user_key = Volunteer(
           key_name = user.openid,
-          nickname = self.request.get('nickname'),
+          nickname = cnk,
           userid = cid
         ).put()
 
