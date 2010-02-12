@@ -29,6 +29,11 @@ handlers:
   static_files: static/css/\1
   upload: static/css/(.*)
 
+## admin_console
+- url: /admin_console/.*
+  script: $PYTHON_LIB/google/appengine/ext/admin
+  login: admin
+
 ## Appstats
 - url: /stats.*
   script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
@@ -40,3 +45,10 @@ handlers:
   script: main.py
   #secure: always
   #login: admin
+
+admin_console:
+  pages:
+  - url: /stats
+    name: "Appstats"
+  - url: /admin_console/
+    name: "Admin_console"
