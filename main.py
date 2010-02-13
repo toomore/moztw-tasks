@@ -250,6 +250,10 @@ class action_read(BaseHandler):
         }
         join_user.append(o)
 
+      ## markdown
+      from markdown import Markdown
+      md2html = Markdown(output_format='html4').convert(aev.actdesc)
+
       otv = {
         'title': aev.actname,
         'sidetitle': '',
@@ -257,7 +261,7 @@ class action_read(BaseHandler):
         'actname': aev.actname,
         'actdate': str(aev.actdate)[:-3],
         'actlocation': aev.actlocation,
-        'actdesc': aev.actdesc,
+        'actdesc': md2html,
         'actuser': '<a href="/user/%s">%s <img class="mimg" src="/images/vcard.png"></a>' % (
           aev.actuser.useruniid_set.fetch(1)[0].key().id_or_name(), aev.actuser.nickname),
         'join_no': ActRegUser.count(),
@@ -309,12 +313,13 @@ class action_edit(BaseHandler):
           ## correct user
           ## convert str to date
           try:
+            from cgi import escape
             ft = time.strptime(self.request.get('actime'), '%Y-%m-%d %H:%M')
             ## change the value
             aev.actname = self.request.get('acname')
             aev.actdate = datetime.datetime(ft.tm_year,ft.tm_mon,ft.tm_mday,ft.tm_hour,ft.tm_min)
             aev.actlocation = self.request.get('aclocation')
-            aev.actdesc = self.request.get('actdes')
+            aev.actdesc = escape(self.request.get('actdes'))
             ## into data.
             aev.put()
             ## Go to action page.

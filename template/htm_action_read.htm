@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>{{ actname|escape }}</h1>
-{{ actdesc|removetags:"script" }}<br>
+{{ actdesc }}<br>
 <form method="post" action="/act/{{ actno }}/join">
   <input type="submit" value="我要報名參加">
 </form>

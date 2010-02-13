@@ -29,6 +29,13 @@ handlers:
   static_files: static/css/\1
   upload: static/css/(.*)
 
+## wmd
+- url: /wmd
+  static_dir: static/wmd
+- url: /wmd/(.*)
+  static_files: static/wmd/\1
+  upload: static/wmd/(.*)
+
 ## admin_console
 - url: /admin_console/.*
   script: $PYTHON_LIB/google/appengine/ext/admin
