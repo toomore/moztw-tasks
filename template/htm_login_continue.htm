@@ -1,0 +1,38 @@
+<html>
+<head>
+<title></title>
+</head>
+<body onload='setTimeout("document.forms[0].submit()", 5);'>
+<form accept-charset="UTF-8" enctype="application/x-www-form-urlencoded" id="openid_message" action="{{ openid }}" method="post">
+<input type="hidden" name="openid.ns" value="http://specs.openid.net/auth/2.0" />
+<input type="hidden" name="openid.ns.ax" value="http://openid.net/srv/ax/1.0" />
+<input type="hidden" name="openid.ns.sreg" value="http://openid.net/extensions/sreg/1.1" />
+<input type="hidden" name="openid.ax.mode" value="fetch_request" />
+<input type="hidden" name="openid.ax.type.country" value="http://axschema.org/contact/country/home" />
+<input type="hidden" name="openid.ax.type.email" value="http://axschema.org/contact/email" />
+<input type="hidden" name="openid.ax.type.firstname" value="http://axschema.org/namePerson/first" />
+<input type="hidden" name="openid.ax.type.language" value="http://axschema.org/pref/language" />
+<input type="hidden" name="openid.ax.type.lastname" value="http://axschema.org/namePerson/last" />
+<input type="hidden" name="openid.ax.required" value="country,email,firstname,language,lastname" />
+
+<input type="hidden" name="openid.sreg.required" value="email,nickname" />
+<input type="hidden" name="openid.realm" value="http://{{ realm }}/" />
+<input type="hidden" name="openid.mode" value="checkid_setup" />
+<input type="hidden" name="openid.return_to" value="{{ finish }}?type={{ openid }}&janrain_nonce={{ janrain_nonce }}" />
+<input type="hidden" name="openid.identity" value="http://specs.openid.net/auth/2.0/identifier_select" />
+<input type="hidden" name="openid.claimed_id" value="http://specs.openid.net/auth/2.0/identifier_select" />
+<input type="hidden" name="openid.assoc_handle" value="{{ assoc_handle }}" />
+<input type="submit" value="Continue" />
+</form>
+{{ bug }}
+<img src="//static.murmur.tw/images/loading-big-white.gif" style="margin: 25% auto 0 auto; display:block ;" />
+<script type="text/javascript">
+<!--
+var elements = document.forms[0].elements;
+for (var i = 0; i < elements.length; i++) {
+elements[i].style.display = "none";
+}
+//-->
+</script>
+</body>
+</html>

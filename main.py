@@ -459,6 +459,16 @@ class OpenIDStartSubmit(BaseHandler):
     c = Consumer({},self.get_store())
     try:
       auth_request = c.begin(openid)
+      ## custom
+      ## Note:openid.Consumer.addExtensionArg have a bug.
+      ## so it doesn't work.
+      #auth_request.addExtensionArg('ax','type.required','email')
+      #auth_request.addExtensionArg('ax','required','country,email,firstname,language,lastname')
+      #auth_request.addExtensionArg('sreg','required','nickname')
+      #auth_request.addExtensionArg( 'sreg','required', 'nickname,email')
+      #auth_request.addExtensionArg( 'sreg','optional', 'fullname')
+      #auth_request.addExtensionArg( 'sreg','policy_url', 'http://%s/privacy/' % self.request.host )
+
     except discover.DiscoveryFailure, e:
       logging.error('Error with begin on '+openid)
       logging.error(str(e))
@@ -481,7 +491,21 @@ class OpenIDStartSubmit(BaseHandler):
     # send the redirect!  we use a meta because appengine bombs out
     # sometimes with long redirect urls
     redirect_url = auth_request.redirectURL(realm, return_to)
-    self.response.out.write("<html><head><meta http-equiv=\"refresh\" content=\"0;url=%s\"></head><body></body></html>" % (redirect_url,))
+
+    ## custom option
+    assoc_handle = list(urlparse.urlparse(redirect_url))
+    temp_value = {
+      'openid': openid,
+      #'openid': auth_request.return_to_args['openid1_claimed_id'],
+      'realm': self.request.host,
+      'return_to': redirect_url,
+      'finish': 'http://' + self.request.host + '/openid-finish',
+      'assoc_handle': auth_request.assoc.handle,
+      'janrain_nonce': auth_request.return_to_args['janrain_nonce'],
+      'bug': [getattr(auth_request, i) for i in dir(auth_request)]
+    }
+    self.response.out.write(template.render('./template/htm_login_continue.htm', temp_value))
+    #self.response.out.write("<html><head><meta http-equiv=\"refresh\" content=\"0;url=%s\"></head><body></body></html>" % (redirect_url,))
 
 class OpenIDFinish(BaseHandler):
   def get(self):
